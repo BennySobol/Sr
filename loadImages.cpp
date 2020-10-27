@@ -11,7 +11,7 @@ loadImages* loadImages::getInstance()
 
 std::vector<std::string> loadImages::load(const fs::path& dirPath)
 {
-    std::set<fs::path> exts{ ".jpg", ".jpeg", ".png" };
+    std::set<fs::path> exts{ ".jpg", ".jpeg", ".png", ".JPG" };
 
     if (!fs::exists(dirPath) || !fs::is_directory(dirPath))
     {

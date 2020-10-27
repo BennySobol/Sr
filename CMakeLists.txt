@@ -1,7 +1,7 @@
 cmake_minimum_required( VERSION 2.8 )
 # Create Project
 project( solution )
-add_executable( project main.cpp loadImages.cpp loadImages.h features.cpp features.h)
+add_executable( project main.cpp loadImages.cpp loadImages.h features.cpp features.h cameraCalibration.cpp cameraCalibration.h cameraPosition.cpp cameraPosition.h)
 
 # Set StartUp Project (Option)
 # (This setting is able to enable by using CMake 3.6.0 RC1 or later.)
