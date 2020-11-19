@@ -1,5 +1,8 @@
 #include "cameraCalibration.h"
 
+#include <opencv2/stitching/detail/motion_estimators.hpp>///////////////////
+#include <opencv2/stitching/detail/autocalib.hpp> ////////
+
 
 // extract corner points from chessboard images
 int cameraCalibration::addChessboardPoints(const std::vector<std::string>& chessboardImages, cv::Size& boardSize)
@@ -52,8 +55,8 @@ double cameraCalibration::calibrate()
         objectPoints,
         imagePoints,
         imageSize,
-        cameraMatrix,
-        distortionCoefficients,
+        _cameraMatrix,
+        _distortionCoefficients,
         cv::noArray(),
         cv::noArray(),
         cv::CALIB_ZERO_TANGENT_DIST | cv::CALIB_FIX_PRINCIPAL_POINT
@@ -64,8 +67,8 @@ cv::Mat cameraCalibration::remap(const cv::Mat& image)
 {
     cv::Mat undistorted;
     if(map1.empty() || map2.empty())
-        cv::initUndistortRectifyMap(cameraMatrix, // computed camera matrix
-                                    distortionCoefficients,   // computed distortion matrix
+        cv::initUndistortRectifyMap(_cameraMatrix, // computed camera matrix
+                                    _distortionCoefficients,   // computed distortion matrix
                                     cv::Mat(),    // optional rectification (none)
                                     cv::Mat(),    // camera matrix to generate undistorted
                                     image.size(),  // size of undistorted
@@ -80,8 +83,8 @@ cv::Mat cameraCalibration::remap(const cv::Mat& image)
 void cameraCalibration::save(std::string filePath)
 {
     cv::FileStorage storage(filePath, cv::FileStorage::WRITE);
-    storage << "cameraMatrix" << cameraMatrix;
-    storage << "distortionCoefficients" << distortionCoefficients;
+    storage << "cameraMatrix" << _cameraMatrix;
+    storage << "distortionCoefficients" << _distortionCoefficients;
     storage.release();
 }
 
@@ -89,7 +92,30 @@ void cameraCalibration::save(std::string filePath)
 void cameraCalibration::load(std::string filePath)
 {
     cv::FileStorage fs(filePath, cv::FileStorage::READ);
-    fs["cameraMatrix"] >> cameraMatrix;
-    fs["distortionCoefficients"] >> distortionCoefficients;
+    fs["cameraMatrix"] >> _cameraMatrix;
+    fs["distortionCoefficients"] >> _distortionCoefficients;
     fs.release();
+}
+
+float cameraCalibration::getFocal()
+{
+    return _cameraMatrix.at<double>(0, 0);
+}
+
+cv::Point2d cameraCalibration::getPP() 
+{
+    return cv::Point2d(_cameraMatrix.at<double>(0, 2), _cameraMatrix.at<double>(1, 2));
+}
+
+cv::Mat cameraCalibration::getCameraMatrix()
+{
+    /*| fx  0   cx |
+      | 0   fy  cy |
+      | 0   0   1  |*/
+    return _cameraMatrix;
+}
+
+cv::Mat cameraCalibration::getDistortionCoefficients()
+{
+    return _distortionCoefficients;
 }

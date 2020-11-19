@@ -7,12 +7,15 @@
 #include "opencv2/highgui.hpp"
 #include "opencv2/features2d.hpp"
 #include "opencv2/xfeatures2d.hpp"
-#include <map>
 
-struct matchingFeatures
+#include "cameraCalibration.h"
+
+struct matchingKeyPoints
 {
 	std::vector<cv::Point2f> currentKeyPoints;
 	std::vector<cv::Point2f> otherKeyPoints;
+	std::vector<int> currentKeyPointsIdx;
+	std::vector<int> otherKeyPointsIdx;	
 };
 
 struct imageFeatures
@@ -22,7 +25,7 @@ struct imageFeatures
 	std::vector<cv::KeyPoint> keyPoints;
 	cv::Mat descriptors;
 
-	std::map<int, matchingFeatures> matchesKeyPoints; // path to other images, <source keyPoints, other images keyPoints>
+	matchingKeyPoints matchingKeyPoints;
 
 } typedef imageFeatures;
 
@@ -31,7 +34,7 @@ class features
 protected:
 	std::vector<imageFeatures> _features;
 public:
-	void matchFeatures();
+	void matchFeatures(cameraCalibration calib);
 	features(std::vector<std::string> images);
 	std::vector<imageFeatures>& getFeatures();
 };

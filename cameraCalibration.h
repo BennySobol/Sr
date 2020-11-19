@@ -13,8 +13,8 @@ private:
     std::vector<std::vector<cv::Point3f>> objectPoints;
     std::vector<std::vector<cv::Point2f>> imagePoints;
 
-    cv::Mat cameraMatrix;
-    cv::Mat distortionCoefficients;
+    cv::Mat _cameraMatrix;
+    cv::Mat _distortionCoefficients;
 
     cv::Mat map1, map2;
     cv::Size imageSize;
@@ -24,8 +24,10 @@ private:
       int addChessboardPoints(const std::vector<std::string>& filelist, cv::Size& boardSize);
       double calibrate();
       cv::Mat remap(const cv::Mat& image);
-      cv::Mat getCameraMatrix() { return cameraMatrix; }
-      cv::Mat getDistortionCoefficients() { return distortionCoefficients; }
+      cv::Mat getCameraMatrix();
+      cv::Mat getDistortionCoefficients();
+      cv::Point2d cameraCalibration::getPP();
+      float getFocal();
       void save(std::string filePath);
       void load(std::string filePath);
 };

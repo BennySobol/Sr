@@ -14,36 +14,44 @@
 
 std::string xmlFilePath = "calib.xml";
 std::string chessboardImagesPath = "C:\\chessboardImages";
-std::string objectImagesPath = "C:\\objectImages";
+
+std::string objectImagesPath = "C:\\Users\\BennySobol\\Desktop\\dataset\\‏fountain-P5\\images\\";
+bool isSorted = true;
 
 int main(int argc, char* argv[])
 {
-    cameraCalibration cameraCalibrator;
-    if (fs::exists(xmlFilePath)) // load calibration
+    try 
     {
-        cameraCalibrator.load(xmlFilePath);
+        cameraCalibration cameraCalibrator;
+        if (fs::exists(xmlFilePath)) // load calibration
+        {
+            cameraCalibrator.load(xmlFilePath);
+        }
+
+        else
+        { // calibrate camera
+            std::vector<std::string> ImagesPath = loadImages::getInstance()->load(chessboardImagesPath, true);
+            cameraCalibrator.addChessboardPoints(ImagesPath, cv::Size(9, 6)); // size of inner chessboard corners
+
+            std::cout << "Error: " << cameraCalibrator.calibrate() << "\n";
+            cameraCalibrator.save("calib.xml");
+        }
+       
+        std::cout << "Calibration parms:\n CameraMatrix:\n" << cameraCalibrator.getCameraMatrix() << "\nDistortionCoefficients\n" << cameraCalibrator.getDistortionCoefficients() << "\n";
+
+        auto images = loadImages::getInstance()->load(objectImagesPath, isSorted);
+        std::cout << "Images were loaded\n";
+        features features(images);
+        std::cout << "Features were extracted\n";
+        features.matchFeatures(cameraCalibrator);
+        std::cout << "Images were sorted\n";
+        auto imagesFeatures = features.getFeatures();
+
+        cameraPosition cameraPosition(cameraCalibrator, imagesFeatures);
     }
-
-    else
-    { // calibrate camera
-        std::vector<std::string> ImagesPath = loadImages::getInstance()->load(chessboardImagesPath);
-        cameraCalibrator.addChessboardPoints(ImagesPath, cv::Size(9, 6)); // size of inner chessboard corners
-
-        std::cout << "Error: " << cameraCalibrator.calibrate() << "\n";
-        cameraCalibrator.save("calib.xml");
+    catch (const std::exception& e) 
+    {
+        std::cout << "ERROR: " << e.what() << '\n';
     }
-
-    std::cout << "Calibration parms:\n CameraMatrix:\n" << cameraCalibrator.getCameraMatrix() << "\nDistortionCoefficients\n" << cameraCalibrator.getDistortionCoefficients() << "\n";
-
-
-    auto images = loadImages::getInstance()->load(objectImagesPath);
-    std::cout << "Images were loaded\n";
-    features features(images);
-    std::cout << "Features were extracted\n";
-    features.matchFeatures();
-    std::cout << "Images were sorted\n";
-    auto imagesFeatures = features.getFeatures();
-
-    cameraPosition cameraPosition(cameraCalibrator.getCameraMatrix(), imagesFeatures);
     return 0;
 }

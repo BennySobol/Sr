@@ -19,6 +19,8 @@ private:
 
 public:
 	static loadImages* getInstance();
-	std::vector<std::string> load(const fs::path& dirPath);
+	std::vector<std::string> load(const fs::path& dirPath, bool isSorted);
 	std::vector<std::string> getImages();
+	void sortImagesBySimilarity();
+	int bestMatch(std::string path);
 };

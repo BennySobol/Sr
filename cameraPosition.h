@@ -15,6 +15,6 @@ private:
    pcl::PointCloud<pcl::PointXYZ> pointCloud;
 
 public:
-	cameraPosition(cv::Mat K, std::vector<imageFeatures> _features);
+	cameraPosition(cameraCalibration calib, std::vector<imageFeatures> _features);
 
 };
