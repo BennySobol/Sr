@@ -12,7 +12,7 @@
 class cameraPosition
 {
 private:
-   pcl::PointCloud<pcl::PointXYZ> pointCloud;
+   pcl::PointCloud<pcl::PointXYZ> pointCloud; // points of xyz - 3D points
 
 public:
 	cameraPosition(cameraCalibration calib, std::vector<imageFeatures> _features);

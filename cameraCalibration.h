@@ -10,8 +10,8 @@
 class cameraCalibration
 {
 private:
-    std::vector<std::vector<cv::Point3f>> objectPoints;
-    std::vector<std::vector<cv::Point2f>> imagePoints;
+    std::vector<std::vector<cv::Point3f>> objectPoints; // store x,y,z points
+    std::vector<std::vector<cv::Point2f>> imagePoints; // store x,y points
 
     cv::Mat _cameraMatrix;
     cv::Mat _distortionCoefficients;

@@ -1,10 +1,7 @@
 #include "cameraCalibration.h"
 
-#include <opencv2/stitching/detail/motion_estimators.hpp>///////////////////
-#include <opencv2/stitching/detail/autocalib.hpp> ////////
 
-
-// extract corner points from chessboard images
+// extract corner points from chessboard images - helps to get parameters about the camera that took the images 
 int cameraCalibration::addChessboardPoints(const std::vector<std::string>& chessboardImages, cv::Size& boardSize)
 {
     std::vector<cv::Point2f> imageCorners;
@@ -18,7 +15,7 @@ int cameraCalibration::addChessboardPoints(const std::vector<std::string>& chess
     cv::Mat image; 
     int goodImages = 0;
 
-    for (int i = 0; i < chessboardImages.size(); i++) // for all chessboards
+    for (int i = 0; i < chessboardImages.size(); i++) // for all chessboards - find the corners 
     {
         image = cv::imread(chessboardImages[i], 0);
 
@@ -48,6 +45,7 @@ int cameraCalibration::addChessboardPoints(const std::vector<std::string>& chess
     return goodImages;
 }
 
+//calibrating usuing details we got from the load/chess board analyze
 double cameraCalibration::calibrate()
 {
     // calibrate the camera
@@ -63,6 +61,7 @@ double cameraCalibration::calibrate()
     );
 }
 
+//to get undistorted image ------ NOTE: Check**
 cv::Mat cameraCalibration::remap(const cv::Mat& image)
 {
     cv::Mat undistorted;
@@ -79,7 +78,7 @@ cv::Mat cameraCalibration::remap(const cv::Mat& image)
     return undistorted;
 }
 
-// save calibration data
+// save calibration data we analyzed to given file path
 void cameraCalibration::save(std::string filePath)
 {
     cv::FileStorage storage(filePath, cv::FileStorage::WRITE);
@@ -88,7 +87,7 @@ void cameraCalibration::save(std::string filePath)
     storage.release();
 }
 
-// load calibration data
+// load calibration data from the given file path
 void cameraCalibration::load(std::string filePath)
 {
     cv::FileStorage fs(filePath, cv::FileStorage::READ);
@@ -97,16 +96,19 @@ void cameraCalibration::load(std::string filePath)
     fs.release();
 }
 
+//get the fical from the camera metrix data
 float cameraCalibration::getFocal()
 {
     return _cameraMatrix.at<double>(0, 0);
 }
 
+//get specific PARAM from the camera metrix - NOTE: Check*
 cv::Point2d cameraCalibration::getPP() 
 {
     return cv::Point2d(_cameraMatrix.at<double>(0, 2), _cameraMatrix.at<double>(1, 2));
 }
 
+//get camera matrix
 cv::Mat cameraCalibration::getCameraMatrix()
 {
     /*| fx  0   cx |
@@ -115,6 +117,7 @@ cv::Mat cameraCalibration::getCameraMatrix()
     return _cameraMatrix;
 }
 
+//get distortion coefficients
 cv::Mat cameraCalibration::getDistortionCoefficients()
 {
     return _distortionCoefficients;

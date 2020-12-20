@@ -18,6 +18,7 @@ struct matchingKeyPoints
 	std::vector<int> otherKeyPointsIdx;	
 };
 
+//represent interesting points in a image
 struct imageFeatures
 {
 	std::string path;
@@ -26,6 +27,9 @@ struct imageFeatures
 	cv::Mat descriptors;
 
 	matchingKeyPoints matchingKeyPoints;
+
+	//////cv::Mat projection;
+	//////cv::Mat tansformtion;
 
 } typedef imageFeatures;
 

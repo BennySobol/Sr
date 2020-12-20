@@ -1,7 +1,6 @@
 #include "features.h"
-#include <opencv2/imgproc.hpp>
-#include <opencv2/calib3d.hpp>
-#include <map>
+#include <opencv2\imgproc.hpp>
+#include <opencv2\calib3d.hpp>
 
 
 #define RATIO_THRESH 0.7
@@ -10,7 +9,9 @@
 // detect and compute all of the images features
 features::features(std::vector<std::string> images)
 {
-    cv::Ptr<cv::FeatureDetector> detector = cv::SIFT::create();
+    cv::Ptr<cv::FeatureDetector> detector = cv::SIFT::create(); //find features using SIFT algorithm/method
+	//find keypoints and descriptors of image using SIFT for every image in the vector
+	//the detector with detect and compute are locating FEATURES and descriptors
     for (std::string image : images)
     {
         cv::Mat src = cv::imread(image);
@@ -28,10 +29,11 @@ features::features(std::vector<std::string> images)
 
 
 // match the features between the images
+//NOTE: ReCheck for understanding!
 void features::matchFeatures(cameraCalibration calib)
 {
     cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::FLANNBASED);
-
+	//check for all features found
     for (int i = 0; i < _features.size() - 1; i++) {
 
         std::vector<std::vector<cv::DMatch>> matches;
@@ -86,7 +88,7 @@ void features::matchFeatures(cameraCalibration calib)
     cv::destroyAllWindows();
 }
 
-
+//return the features vector
 std::vector<imageFeatures>& features::getFeatures()
 {
     return _features;
