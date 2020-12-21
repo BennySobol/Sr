@@ -1,14 +1,9 @@
 #pragma once
-
-#include <vector>
-#include <set>
-#include <iostream>
-
-#include "opencv2/highgui.hpp"
-#include "opencv2/features2d.hpp"
-#include "opencv2/xfeatures2d.hpp"
-
 #include "cameraCalibration.h"
+
+#include "opencv2/features2d.hpp"
+
+#include <set>
 
 struct matchingKeyPoints
 {
@@ -16,7 +11,7 @@ struct matchingKeyPoints
 	std::vector<cv::Point2f> otherKeyPoints;
 	std::vector<int> currentKeyPointsIdx;
 	std::vector<int> otherKeyPointsIdx;	
-};
+}typedef matchingKeyPoints;
 
 //represent interesting points in a image
 struct imageFeatures
@@ -28,8 +23,7 @@ struct imageFeatures
 
 	matchingKeyPoints matchingKeyPoints;
 
-	//////cv::Mat projection;
-	//////cv::Mat tansformtion;
+	cv::Mat projection;
 
 } typedef imageFeatures;
 
@@ -42,3 +36,7 @@ public:
 	features(std::vector<std::string> images);
 	std::vector<imageFeatures>& getFeatures();
 };
+
+// function declaration
+int getScreenWidth();
+void resizeWithAspectRatio(cv::Mat& image, int width);

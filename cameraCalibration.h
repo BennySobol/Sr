@@ -2,10 +2,10 @@
 
 #include <iostream>
 #include <vector>
-#include "opencv2/calib3d/calib3d.hpp"
-#include "opencv2/imgproc/imgproc.hpp"
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
+#include "opencv2/calib3d.hpp"
+#include "opencv2/imgproc.hpp"
+#include <opencv2/core.hpp>
+#include "opencv2/highgui.hpp"
 
 class cameraCalibration
 {
@@ -27,7 +27,8 @@ private:
       cv::Mat getCameraMatrix();
       cv::Mat getDistortionCoefficients();
       cv::Point2d cameraCalibration::getPP();
-      float getFocal();
+      double getFocal();
       void save(std::string filePath);
       void load(std::string filePath);
+      cv::Mat estimateCameraMatrix(double focalLength, cv::Size imageSize);
 };

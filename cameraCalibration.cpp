@@ -97,7 +97,7 @@ void cameraCalibration::load(std::string filePath)
 }
 
 //get the fical from the camera metrix data
-float cameraCalibration::getFocal()
+double cameraCalibration::getFocal()
 {
     return _cameraMatrix.at<double>(0, 0);
 }
@@ -121,4 +121,21 @@ cv::Mat cameraCalibration::getCameraMatrix()
 cv::Mat cameraCalibration::getDistortionCoefficients()
 {
     return _distortionCoefficients;
+}
+
+cv::Mat cameraCalibration::estimateCameraMatrix(double focalLength, cv::Size imageSize)
+{
+    double cx = imageSize.width / 2;
+    double cy = imageSize.height / 2;
+
+    cv::Point2d pp(cx, cy);
+
+    _cameraMatrix = cv::Mat::eye(3, 3, CV_64F);
+
+    _cameraMatrix.at<double>(0, 0) = focalLength;
+    _cameraMatrix.at<double>(1, 1) = focalLength;
+    _cameraMatrix.at<double>(0, 2) = cx;
+    _cameraMatrix.at<double>(1, 2) = cy;
+
+    return _cameraMatrix;
 }

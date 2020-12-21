@@ -1,54 +1,8 @@
 #include "cameraPosition.h"
 
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/calib3d/calib3d.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <math.h>
-
-#include <opencv2/opencv.hpp>
-#include <opencv2/features2d.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/calib3d.hpp>
-#include <opencv2/xfeatures2d.hpp>
-#include <vector>
-#include <iostream>
-#include <Eigen/Dense>
-#include <opencv2/core/eigen.hpp>
-
-#include <pcl/ModelCoefficients.h>
-#include <pcl/point_types.h>
-#include <pcl/common/common_headers.h>
-#include <pcl/visualization/pcl_visualizer.h>
-#include <pcl/visualization/cloud_viewer.h>
-#include <pcl/io/pcd_io.h>
-#include <pcl/filters/extract_indices.h>
-#include <pcl/filters/voxel_grid.h>
-#include <pcl/features/normal_3d.h>
-#include <pcl/kdtree/kdtree.h>
-#include <pcl/sample_consensus/method_types.h>
-#include <pcl/sample_consensus/model_types.h>
-#include <pcl/segmentation/sac_segmentation.h>
-#include <pcl/segmentation/extract_clusters.h>
-
-using namespace std;
-using namespace cv;
-using namespace cv::xfeatures2d;
-using namespace Eigen;
-
-// point part of PCL contains 3D point and its 2D origin point and color
-struct CloudPoint {
-    cv::Point3d pt;
-    std::vector<int>index_of_2d_origin;
-    float color;
-};
-
-
 //NOTE: COMMENT BOTH PROGRAMMERS!
-void convertHomogeneous(cv::Mat point4D, std::vector< cv::Point3d>& point3D);
-//NOTE: COMMENT BOTH PROGRAMMERS!
-void obtainMatches(vector<KeyPoint>& kp1, vector<KeyPoint>& kp2, Mat& descriptors1, Mat& descriptors2, vector<Point2d>& points1, vector<Point2d>& points2, vector<int>& points1_idx, vector<int>& points2_idx);
-//NOTE: COMMENT BOTH PROGRAMMERS!
+void obtainMatches(std::vector<cv::KeyPoint>& kp1, std::vector<cv::KeyPoint>& kp2, cv::Mat& descriptors1, cv::Mat& descriptors2, std::vector<cv::Point2d>& points1, std::vector<cv::Point2d>& points2, std::vector<int>& points1_idx, std::vector<int>& points2_idx);
+
 //builds pcl and reconstract camera position
 //gets camera calib and vector of features(also matched)
 cameraPosition::cameraPosition(cameraCalibration calib, std::vector<imageFeatures> features)
@@ -60,8 +14,6 @@ cameraPosition::cameraPosition(cameraCalibration calib, std::vector<imageFeature
     E = findEssentialMat(matchingKeyPoints.currentKeyPoints, matchingKeyPoints.otherKeyPoints, calib.getFocal(), calib.getPP(), cv::RANSAC, 0.9, 3.0, mask);
     cv::recoverPose(E, matchingKeyPoints.currentKeyPoints, matchingKeyPoints.otherKeyPoints, rotation, translation, calib.getFocal(), calib.getPP(), mask);
 
-    std::vector<cv::Mat> v_transf;
-
     cv::Mat zeros = (cv::Mat_<double>(3, 1) << 0, 0, 0);
 
 	//creates vector of cloud points
@@ -69,28 +21,21 @@ cameraPosition::cameraPosition(cameraCalibration calib, std::vector<imageFeature
 	//create PCL which contains points - with XYZ(3d points) and each point also has Red Green Blue params(RGB)
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr(new pcl::PointCloud<pcl::PointXYZRGB>);
 
-    //
-    cv::Mat tran, tran1, points4D, A, B;
+    cv::Mat tran, tran1, points4D;
 
     hconcat(rotation, translation, tran);
     hconcat(calib.getCameraMatrix(), zeros, tran1);
-    A = tran1;
-    B = calib.getCameraMatrix() * tran;
-    v_transf.push_back(B);
+    features[0].projection = tran1;
+    features[1].projection = calib.getCameraMatrix() * tran;
 
-    triangulatePoints(A, B, matchingKeyPoints.currentKeyPoints, matchingKeyPoints.otherKeyPoints, points4D);
-    std::vector<cv::Point3d> PointCloud;
-    convertHomogeneous(points4D, PointCloud);
+    triangulatePoints(features[0].projection, features[1].projection, matchingKeyPoints.currentKeyPoints, matchingKeyPoints.otherKeyPoints, points4D);
 
-    // 
-    for (int i = 0; i < points4D.cols; i++) {
+    for (int i = 0; i < points4D.cols; i++) 
+    {
         CloudPoint point;
-        pcl::PointXYZRGB point_pcl;
 
-        point.pt = PointCloud[i];
-        point_pcl.x = point.pt.x;
-        point_pcl.y = point.pt.y;
-        point_pcl.z = point.pt.z;
+        // convert point from homogeneous to 3d cartesian coordinates
+        point.point = cv::Point3d(points4D.at<float>(0, i) / points4D.at<float>(3, i), points4D.at<float>(1, i) / points4D.at<float>(3, i), points4D.at<float>(2, i) / points4D.at<float>(3, i));
 
         std::vector<int> indices(features.size(), 0);
         indices[0] = matchingKeyPoints.currentKeyPointsIdx[i];
@@ -98,47 +43,37 @@ cameraPosition::cameraPosition(cameraCalibration calib, std::vector<imageFeature
         point.index_of_2d_origin = indices;
 
         cv::Vec3b color = features[0].image.at<cv::Vec3b>(cv::Point(matchingKeyPoints.currentKeyPoints[i].x, matchingKeyPoints.currentKeyPoints[i].y));
-        uint8_t r = (uint8_t)color.val[2];
-        uint8_t g = (uint8_t)color.val[1];
-        uint8_t b = (uint8_t)color.val[0];
-        uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
-        point_pcl.rgb = *reinterpret_cast<float*>(&rgb);
+       
+        // color.val[2] is red, color.val[1] is green and color.val[0] is blue
+        uint32_t rgb = (color.val[2] << 16 | color.val[1] << 8 | color.val[0]);
         point.color = *reinterpret_cast<float*>(&rgb);
+
+        pcl::PointXYZRGB point_pcl(point.point.x, point.point.y, point.point.z, color.val[2], color.val[1], color.val[0]);
 
         all_3d_points.push_back(point);
         point_cloud_ptr->push_back(point_pcl);
     }
 
-    ////myfile << "points1 = [";
-    ////for (int k = 0; k < (int)all_3d_points.size(); k++) {
-    ////    myfile << all_3d_points[k].pt.x << ", " << all_3d_points[k].pt.y << ", " << all_3d_points[k].pt.z << endl;
-    ////}
-    ////myfile << "]" << endl;
 
-     /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-      * 3
-      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-							//Previous_3d_points were puntos_en_3D_anteriores before
-    std::vector<CloudPoint> Previous_3d_points = all_3d_points;
+    std::vector<CloudPoint> previous_3d_points = all_3d_points;
 
  
-    for (int i = 2; i < features.size() - 1; i++) {
+    for (unsigned int i = 2; i < features.size() - 1; i++)
+    {
 
         std::vector<cv::KeyPoint> keypoint3d;
         cv::KeyPoint key3d;
         cv::Mat descriptors3d;
         int posicion;
 
-        for (unsigned int j = 0; j < Previous_3d_points.size(); j++) {
-            //			cout << i << ", " << j << endl;
-            posicion = Previous_3d_points[j].index_of_2d_origin[i - 1];
-            //			cout << "j: " << j << " --  i-1: " << i-1 << " -- posicion: " << posicion << " -- v_desc_tot: " << v_descriptors[i-1].size() << endl;
-            descriptors3d.push_back(features[i - 1].descriptors.row(posicion));// -1?
-            //			cout << "C" << endl;
-            key3d = features[i - 1].keyPoints[posicion]; // -1?
+        for (unsigned int j = 0; j < previous_3d_points.size(); j++) 
+        {
+            posicion = previous_3d_points[j].index_of_2d_origin[i - 1];
+            descriptors3d.push_back(features[i - 1].descriptors.row(posicion));
+            key3d = features[i - 1].keyPoints[posicion];
             keypoint3d.push_back(key3d);
         }
-        std::cout << "3d" << keypoint3d.size() << ", " << "kp" << features[i].keyPoints.size() << std::endl;
+        std::cout << "3d " << keypoint3d.size() << ", " << "kp " << features[i].keyPoints.size() << std::endl;
 
 
         std::vector<cv::Point2d> obj_new, scene_new;
@@ -147,14 +82,14 @@ cameraPosition::cameraPosition(cameraCalibration calib, std::vector<imageFeature
 
         cv::Mat rvec, tvec;
         std::vector<cv::Point3d> pnpPointcloud_valid;
-        cv::Point3d  punto;
 
-        for (unsigned int j = 0; j < obj_idx_new.size(); j++) {
-            punto = Previous_3d_points[obj_idx_new[j]].pt;
-            pnpPointcloud_valid.push_back(punto);
+        for (unsigned int j = 0; j < obj_idx_new.size(); j++) 
+        {
+            pnpPointcloud_valid.push_back(previous_3d_points[obj_idx_new[j]].point);
         }
         std::cout << pnpPointcloud_valid.size() << ", " << scene_new.size() << std::endl;
-        cv::solvePnPRansac(pnpPointcloud_valid, scene_new, calib.getCameraMatrix(), calib.getDistortionCoefficients(), rvec, tvec, false, 300, 3.0); //19 error OpenCV(4.4.0-dev) Error: Unspecified error (> DLT algorithm needs at least 6 points for pose estimation from 3D-2D point correspondences. (expected: 'count >= 6'), where 'count' is 5 must be greater than or equal to '6' is 6) in void __cdecl cvFindExtrinsicCameraParams2(const struct CvMat*, const struct CvMat*, const struct CvMat*, const struct CvMat*, struct CvMat*, struct CvMat*, int), file C : \cv\opencv - master\modules\calib3d\src\calibration.cpp, line 1173
+        cv::solvePnPRansac(pnpPointcloud_valid, scene_new, calib.getCameraMatrix(), calib.getDistortionCoefficients(), rvec, tvec, false, 300, 3.0); 
+        //TO DO FIX - 19 error OpenCV(4.4.0-dev) Error: Unspecified error (> DLT algorithm needs at least 6 points for pose estimation from 3D-2D point correspondences. (expected: 'count >= 6'), where 'count' is 5 must be greater than or equal to '6' is 6) in void __cdecl cvFindExtrinsicCameraParams2(const struct CvMat*, const struct CvMat*, const struct CvMat*, const struct CvMat*, struct CvMat*, struct CvMat*, int), file C : \cv\opencv - master\modules\calib3d\src\calibration.cpp, line 1173
 
         std::cout << "Ransac done!" << endl;
 
@@ -163,182 +98,87 @@ cameraPosition::cameraPosition(cameraCalibration calib, std::vector<imageFeature
         cv::Rodrigues(rvec, r_mat);
         hconcat(r_mat, tvec, tran);
 
-        // We triangulate the points
-        B.release();
-        B = calib.getCameraMatrix() * tran;
-        v_transf.push_back(B);
+        // triangulate the points
+        features[i].projection = calib.getCameraMatrix() * tran;
 
-        cv::Mat new_points4D;
-        std::vector<cv::Point3d> new_PointCloud;
-        cout << "Imagen " << i - 1 << " con imagen " << i << ": " << features[i - 1].matchingKeyPoints.currentKeyPoints.size() << endl;
-        triangulatePoints(v_transf[i - 2], v_transf[i - 1], features[i - 1].matchingKeyPoints.currentKeyPoints, features[i - 1].matchingKeyPoints.otherKeyPoints, new_points4D);
-        //		cout << new_points4D << endl;
-        convertHomogeneous(new_points4D, new_PointCloud);
+        cv::Mat newPoints4D;
+        cout << "Image " << i - 1 << " with image " << i << ": " << features[i - 1].matchingKeyPoints.currentKeyPoints.size() << endl;
+        triangulatePoints(features[i - 1].projection, features[i].projection, features[i - 1].matchingKeyPoints.currentKeyPoints, features[i - 1].matchingKeyPoints.otherKeyPoints, newPoints4D);
 
-        Previous_3d_points.clear();
+        previous_3d_points.clear();
 
-        for (int j = 0; j < (int)new_PointCloud.size(); j++) {
+        for (int j = 0; j < newPoints4D.cols; j++) {
 
-            if ((features[i - 1].matchingKeyPoints.currentKeyPointsIdx[j] < (int)features[i - 1].keyPoints.size())
+            if ((features[i - 1].matchingKeyPoints.currentKeyPointsIdx[j] < features[i - 1].keyPoints.size())
                 && (features[i - 1].matchingKeyPoints.currentKeyPointsIdx[j] >= 0)
-                && (features[i - 1].matchingKeyPoints.otherKeyPointsIdx[j] < (int)features[i].keyPoints.size())
+                && (features[i - 1].matchingKeyPoints.otherKeyPointsIdx[j] < features[i].keyPoints.size())
                 && (features[i - 1].matchingKeyPoints.otherKeyPointsIdx[j] >= 0)) {
 
                 CloudPoint point;
-                pcl::PointXYZRGB point_pcl;
 
-                point.pt = new_PointCloud[j];
-                point_pcl.x = point.pt.x;
-                point_pcl.y = point.pt.y;
-                point_pcl.z = point.pt.z;
+                // convert point from homogeneous to 3d cartesian coordinates
+                point.point = cv::Point3d(newPoints4D.at<float>(0, j) / newPoints4D.at<float>(3, j), newPoints4D.at<float>(1, j) / newPoints4D.at<float>(3, j), newPoints4D.at<float>(2, j) / newPoints4D.at<float>(3, j));
 
                 // You only have a couple of images so the vector has to correspond only to these two images
                 std::vector<int> indices(features.size(), 0);
 
                 indices[i - 1] = features[i - 1].matchingKeyPoints.currentKeyPointsIdx[j];
                 indices[i] = features[i - 1].matchingKeyPoints.otherKeyPointsIdx[j];
-                // cout << point.pt <<  " [" << indices[0] << ", " << indices[1] << ", " << indices[2] << ", " << indices[3] << ", " << indices[4] << "]" << endl;
                 point.index_of_2d_origin = indices;
 
                 cv::Vec3b color = features[i - 1].image.at<cv::Vec3b>(cv::Point(features[i - 1].matchingKeyPoints.currentKeyPoints[i].x, features[i - 1].matchingKeyPoints.currentKeyPoints[i].y)); //???????
-                uint8_t r = (uint8_t)color.val[2];
-                uint8_t g = (uint8_t)color.val[1];
-                uint8_t b = (uint8_t)color.val[0];
-                uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
+
+                // color.val[2] - red, color.val[1] - green, color.val[0] - blue
+                uint32_t rgb = (color.val[2] << 16 | color.val[1] << 8 | color.val[0]);
                 point.color = *reinterpret_cast<float*>(&rgb);
-                point_pcl.rgb = *reinterpret_cast<float*>(&rgb);
+                // (x, y, z, r, g, b)
+                pcl::PointXYZRGB point_pcl(point.point.x, point.point.y, point.point.z, color.val[2], color.val[1], color.val[0]);
 
                 all_3d_points.push_back(point);
-                Previous_3d_points.push_back(point);
+                previous_3d_points.push_back(point);
                 point_cloud_ptr->push_back(point_pcl);
 
             }
         }
-        ////myfile << "points" << i << " = [";
-        ////for (int k = 0; k < (int)Previous_3d_points.size(); k++) {
-        ////    myfile << Previous_3d_points[k].pt.x << ", " << Previous_3d_points[k].pt.y << ", " << Previous_3d_points[k].pt.z << endl;
-        ////}
-        ////myfile << "]" << endl;
     }
 
-	//display the PCL
-    // pcl showCloud
-    pcl::visualization::CloudViewer viewer("Viewer");
-    viewer.showCloud(point_cloud_ptr);
-    while (!viewer.wasStopped()) {
+    //display the point cloud
+    pcl::visualization::PCLVisualizer::Ptr viewer(new pcl::visualization::PCLVisualizer("3D Viewer"));
+    viewer->setBackgroundColor(235, 235, 235);
+    viewer->addPointCloud<pcl::PointXYZRGB>(point_cloud_ptr, "point cloud");
+    viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "point cloud");
+    viewer->initCameraParameters();
+    viewer->setShowFPS(true);
+    viewer->setWindowName("point cloud");
 
+    while (!viewer->wasStopped()) {
+        viewer->spin();
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
     cv::destroyAllWindows();
 }
 
 
+void obtainMatches(std::vector<cv::KeyPoint>& kp1, std::vector<cv::KeyPoint>& kp2, cv::Mat& descriptors1, cv::Mat& descriptors2, std::vector<cv::Point2d>& points1, std::vector<cv::Point2d>& points2, std::vector<int>& points1_idx, std::vector<int>& points2_idx) {
 
-void convertHomogeneous(cv::Mat point4D, std::vector< cv::Point3d>& point3D) {
-    Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> change;
-
-   cv2eigen(point4D, change);
-
-    for (int b = 0; b < point4D.cols; b++) {
-        cv::Point3d mA;
-        if (change(3, b) == 0) {
-            mA.x = change(0, b);
-            mA.y = change(1, b);
-            mA.z = change(2, b);
-        }
-        else {
-            mA.x = change(0, b) / change(3, b);
-            mA.y = change(1, b) / change(3, b);
-            mA.z = change(2, b) / change(3, b);
-        }
-        point3D.push_back(mA);
-    }
-}
-
-
-
-void obtainMatches(vector<KeyPoint>& kp1, vector<KeyPoint>& kp2, Mat& descriptors1, Mat& descriptors2, vector<Point2d>& points1, vector<Point2d>& points2, vector<int>& points1_idx, vector<int>& points2_idx) {
-
-    BFMatcher matcher(NORM_L2, false);
-    vector<vector< DMatch > > matches;
+    cv::BFMatcher matcher(cv::NORM_L2, false);
+    std::vector<std::vector< cv::DMatch > > matches;
     matcher.knnMatch(descriptors1, descriptors2, matches, 2);
 
-    vector<DMatch > Best_Matches;
-    for (int k = 0; k < (int)matches.size(); k++) {
+    std::vector<cv::DMatch > Best_Matches;
+    for (int k = 0; k < matches.size(); k++) {
 
         float dis1 = matches[k][0].distance;
         float dis2 = matches[k][1].distance;
 
         if (((dis1 < 300.0 && dis1 > 0) || (dis2 < 300.0 && dis2 > 0)) && (dis2 / dis1 > 1.5))
             Best_Matches.push_back(matches[k][0]);
+    }
+    for (int l = 0; l < Best_Matches.size(); l++) {
+        points1.push_back(kp1[Best_Matches[l].queryIdx].pt);
+        points1_idx.push_back(Best_Matches[l].queryIdx);
 
-        for (int l = 0; l < (int)Best_Matches.size(); l++) {
-            points1.push_back(kp1[Best_Matches[l].queryIdx].pt);
-            points1_idx.push_back(Best_Matches[l].queryIdx);
-
-            points2.push_back(kp2[Best_Matches[l].trainIdx].pt);
-            points2_idx.push_back(Best_Matches[l].trainIdx);
-        }
+        points2.push_back(kp2[Best_Matches[l].trainIdx].pt);
+        points2_idx.push_back(Best_Matches[l].trainIdx);
     }
 }
-
-
-////// Recover motion between first to second image
-////cv::Mat Transformation = cv::Mat::eye(4, 4, CV_64F);
-////cv::Mat Projection = calib.getCameraMatrix() * cv::Mat::eye(3, 4, CV_64F);
-
-////// pose from next to current 
-
-////recoverPose(E, point2, point1, local_R, local_t, K.at<double>(0, 0), cv::Point2d(K.at<double>(0, 2), K.at<double>(1, 2)), mask);
-
-////// local tansform
-////cv::Mat T = cv::Mat::eye(4, 4, CV_64F);
-////local_R.copyTo(T(cv::Range(0, 3), cv::Range(0, 3)));
-////local_t.copyTo(T(cv::Range(0, 3), cv::Range(3, 4)));
-
-////// accumulate transform
-////cv::Mat nextTransformation = Transformation * T;
-
-
-////// make projection matrix
-////cv::Mat R = nextTransformation(cv::Range(0, 3), cv::Range(0, 3));
-////cv::Mat t = nextTransformation(cv::Range(0, 3), cv::Range(3, 4));
-
-////cv::Mat P(3, 4, CV_64F);
-
-////P(cv::Range(0, 3), cv::Range(0, 3)) = R.t();
-////P(cv::Range(0, 3), cv::Range(3, 4)) = -R.t() * t;
-////P = K * P;
-
-////cv::Mat nextProjection = P;
-
-////cv::Mat points4D;
-////triangulatePoints(Projection, nextProjection, point1, point2, points4D);
-
-////// display point cloud
-
-////// prepare a viewer
-////pcl::visualization::PCLVisualizer viewer("Viewer");
-////viewer.setBackgroundColor(255, 255, 255);
-
-////// create point cloud
-////pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
-////cloud->points.resize(points4D.rows);
-
-////for (int i = 0; i < points4D.rows; i++) {
-////    pcl::PointXYZRGB& point = cloud->points[i];
-
-////    point.x = points4D.at<float>(0, i);
-////    point.y = points4D.at<float>(1, i);
-////    point.z = points4D.at<float>(2, i);
-////    point.r = 0;
-////    point.g = 0;
-////    point.b = 255;
-////}
-
-////viewer.addPointCloud(cloud, "Point Cloud");
-////viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "Point Cloud"); viewer.addCoordinateSystem(1.0);
-
-////viewer.initCameraParameters();
-////while (!viewer.wasStopped()) {
-////    viewer.spin();
-////}

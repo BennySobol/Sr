@@ -2,10 +2,11 @@
 #include <vector>
 #include <set>
 #include <iostream>
+#include <boost/filesystem.hpp>
 
 #include "opencv2/highgui.hpp"
-#include "opencv2/imgproc/imgproc.hpp"
-#include <boost/filesystem.hpp>
+#include "opencv2/imgproc.hpp"
+
 
 namespace fs = boost::filesystem;
 
