@@ -15,16 +15,20 @@
 // point part of PCL contains 3D point and its 2D origin point and color
 struct CloudPoint {
 	cv::Point3d point;
-	std::vector<int>index_of_2d_origin;
-	int seen = 0; // how many cameras have seen this point
+	std::vector<int> indexOf2dOrigin;
 	float color;
 } typedef CloudPoint;
 
 class cameraPosition
 {
 private:
-	pcl::PointCloud<pcl::PointXYZ> pointCloud;// points of xyz - 3D points
+	std::vector<CloudPoint> _pointCloud;
+	pcl::PointCloud<pcl::PointXYZRGB>::Ptr _pclPointCloudPtr;
 
 public:
 	cameraPosition(cameraCalibration calib, std::vector<imageFeatures> _features);
+	void showPointCloud();
 };
+
+//NOTE: COMMENT BOTH PROGRAMMERS!
+void obtainMatches(std::vector<cv::KeyPoint>& kp1, std::vector<cv::KeyPoint>& kp2, cv::Mat& descriptors1, cv::Mat& descriptors2, std::vector<cv::Point2d>& points1, std::vector<cv::Point2d>& points2, std::vector<int>& points1_idx, std::vector<int>& points2_idx);
