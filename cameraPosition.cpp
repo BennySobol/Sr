@@ -3,8 +3,9 @@
 
 //builds pcl and reconstract camera position
 //gets camera calib and vector of features(also matched)
-cameraPosition::cameraPosition(cameraCalibration calib, std::vector<imageFeatures> features)
+cameraPosition::cameraPosition(cameraCalibration calib, std::vector<imageFeatures> features, std::string objectImagesPath)
 {
+	this->_imagesLocation = objectImagesPath;
     cv::Mat E, rotation, translation, mask;
     //getting essential metrix and recovers cam position
     E = findEssentialMat(features[0].matchingKeyPoints.currentKeyPoints, features[0].matchingKeyPoints.otherKeyPoints, calib.getFocal(), calib.getPP(), cv::RANSAC, 0.9, 3.0, mask);
@@ -109,8 +110,17 @@ cameraPosition::cameraPosition(cameraCalibration calib, std::vector<imageFeature
             }
         }
     }
-
+	
+	savePointCloud();
     showPointCloud();
+}
+
+
+//saves the Point cloud to file
+void cameraPosition::savePointCloud()
+{
+	pcl::io::savePLYFileBinary(this->_imagesLocation + "\\pclSaved.ply" , *_pclPointCloudPtr);
+
 }
 
 

@@ -8,7 +8,7 @@
 #include <pcl/point_cloud.h>
 #include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/visualization/cloud_viewer.h>
-
+#include <pcl/io/ply_io.h>
 #include <thread>
 
 
@@ -22,12 +22,14 @@ struct CloudPoint {
 class cameraPosition
 {
 private:
+	std::string _imagesLocation;
 	std::vector<CloudPoint> _pointCloud;
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr _pclPointCloudPtr;
 
 public:
-	cameraPosition(cameraCalibration calib, std::vector<imageFeatures> _features);
+	cameraPosition(cameraCalibration calib, std::vector<imageFeatures> _features, std::string imagesLocation);
 	void showPointCloud();
+	void savePointCloud();
 };
 
 //NOTE: COMMENT BOTH PROGRAMMERS!

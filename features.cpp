@@ -31,7 +31,7 @@ features::features(std::vector<std::string> images)
 void features::matchFeatures(cameraCalibration calib)
 {
     int screenWidth = getScreenWidth();
-    cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::FLANNBASED);
+    cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::FLANNBASED); //'FLANNBASED' is faster, BRUTEFORCE more good but slow
 	//check for all features found
     for (unsigned int i = 0; i < _features.size() - 1; i++)
     {

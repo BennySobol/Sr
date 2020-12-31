@@ -5,7 +5,7 @@
 
 std::string xmlFilePath = ""; //camera calbration file location
 std::string chessboardImagesPath = ""; // chess board images for camera calibration
-std::string objectImagesPath = "C:\\Users\\BennySobol\\Desktop\\dataset\\fountain-P5\\images"; // Images of object surface to extract points cloud from
+std::string objectImagesPath = "C:\\images"; // Images of object surface to extract points cloud from
 bool isSorted = true;
 double focalLength = 2759.48;
 
@@ -47,7 +47,7 @@ int main(int argc, char* argv[])
 		//load the features
         auto imagesFeatures = features.getFeatures();
 		//get the PCL and display it using camera position reconstract
-        cameraPosition cameraPosition(cameraCalibrator, imagesFeatures);
+        cameraPosition cameraPosition(cameraCalibrator, imagesFeatures, objectImagesPath);
     }
     catch (const std::exception& e)
     {
