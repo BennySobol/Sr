@@ -1,7 +1,7 @@
 #pragma once
 #include "features.h"
 
-
+#include <thread>
 #include <opencv2/calib3d.hpp>
 
 #include <pcl/point_types.h>
@@ -9,26 +9,28 @@
 #include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/visualization/cloud_viewer.h>
 
-#include <thread>
 
 
 // point part of PCL contains 3D point and its 2D origin point and color
-struct CloudPoint {
+struct pointInCloud {
+	int i;
+	int j;
+
 	cv::Point3d point;
-	std::vector<int> indexOf2dOrigin;
+	int otherKeyPointsIdx;
 	float color;
-} typedef CloudPoint;
+} typedef pointInCloud;
 
 class cameraPosition
 {
 private:
-	std::vector<CloudPoint> _pointCloud;
+	std::vector<pointInCloud> _pointCloud;
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr _pclPointCloudPtr;
 
+	int _pclPointCloudPtrPreviousSize;
 public:
-	cameraPosition(cameraCalibration calib, std::vector<imageFeatures> _features);
+	cameraPosition(cameraCalibration calib, std::vector<imageFeatures> _features, bool optimization=true);
 	void showPointCloud();
 };
 
-//NOTE: COMMENT BOTH PROGRAMMERS!
-void obtainMatches(std::vector<cv::KeyPoint>& kp1, std::vector<cv::KeyPoint>& kp2, cv::Mat& descriptors1, cv::Mat& descriptors2, std::vector<cv::Point2d>& points1, std::vector<cv::Point2d>& points2, std::vector<int>& points1_idx, std::vector<int>& points2_idx);
+void obtainMatches(imageFeatures features, cv::Mat& otherdescriptors, std::vector<cv::Point2d>& outputPoints2d, std::vector<int>& outputPoints2dIdx, bool optimization=true);

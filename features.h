@@ -32,9 +32,12 @@ class features
 protected:
 	std::vector<imageFeatures> _features;
 public:
-	void matchFeatures(cameraCalibration calib);
+	void matchFeatures(cameraCalibration calib, bool optimization=true, bool showMatchingFeature=false);
 	features(std::vector<std::string> images);
 	std::vector<imageFeatures>& getFeatures();
+
+	void save(std::string filePath);
+	void load(std::string filePath);
 };
 
 // function declaration
