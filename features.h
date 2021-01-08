@@ -1,20 +1,19 @@
 #pragma once
+#include "cameraCalibration.h"
 
-#include <vector>
-#include <set>
-#include <iostream>
-
-#include "opencv2/highgui.hpp"
 #include "opencv2/features2d.hpp"
-#include "opencv2/xfeatures2d.hpp"
-#include <map>
 
-struct matchingFeatures
+#include <set>
+
+struct matchingKeyPoints
 {
 	std::vector<cv::Point2f> currentKeyPoints;
 	std::vector<cv::Point2f> otherKeyPoints;
-};
+	std::vector<int> currentKeyPointsIdx;
+	std::vector<int> otherKeyPointsIdx;	
+}typedef matchingKeyPoints;
 
+//represent interesting points in a image
 struct imageFeatures
 {
 	std::string path;
@@ -22,7 +21,9 @@ struct imageFeatures
 	std::vector<cv::KeyPoint> keyPoints;
 	cv::Mat descriptors;
 
-	std::map<int, matchingFeatures> matchesKeyPoints; // path to other images, <source keyPoints, other images keyPoints>
+	matchingKeyPoints matchingKeyPoints;
+
+	cv::Mat projection;
 
 } typedef imageFeatures;
 
@@ -31,7 +32,14 @@ class features
 protected:
 	std::vector<imageFeatures> _features;
 public:
-	void matchFeatures();
+	void matchFeatures(cameraCalibration calib, bool optimization=true, bool showMatchingFeature=false);
 	features(std::vector<std::string> images);
 	std::vector<imageFeatures>& getFeatures();
+
+	void save(std::string filePath);
+	void load(std::string filePath);
 };
+
+// function declaration
+int getScreenWidth();
+void resizeWithAspectRatio(cv::Mat& image, int width);

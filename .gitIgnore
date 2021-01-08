@@ -1,0 +1,5 @@
+# Cmake solution
+build/*
+
+.git/*
+.vs/*

@@ -1,7 +1,7 @@
 #include "cameraCalibration.h"
 
 
-// extract corner points from chessboard images
+// extract corner points from chessboard images - helps to get parameters about the camera that took the images 
 int cameraCalibration::addChessboardPoints(const std::vector<std::string>& chessboardImages, cv::Size& boardSize)
 {
     std::vector<cv::Point2f> imageCorners;
@@ -15,7 +15,7 @@ int cameraCalibration::addChessboardPoints(const std::vector<std::string>& chess
     cv::Mat image; 
     int goodImages = 0;
 
-    for (int i = 0; i < chessboardImages.size(); i++) // for all chessboards
+    for (int i = 0; i < chessboardImages.size(); i++) // for all chessboards - find the corners 
     {
         image = cv::imread(chessboardImages[i], 0);
 
@@ -45,6 +45,7 @@ int cameraCalibration::addChessboardPoints(const std::vector<std::string>& chess
     return goodImages;
 }
 
+//calibrating usuing details we got from the load/chess board analyze
 double cameraCalibration::calibrate()
 {
     // calibrate the camera
@@ -52,20 +53,21 @@ double cameraCalibration::calibrate()
         objectPoints,
         imagePoints,
         imageSize,
-        cameraMatrix,
-        distortionCoefficients,
+        _cameraMatrix,
+        _distortionCoefficients,
         cv::noArray(),
         cv::noArray(),
         cv::CALIB_ZERO_TANGENT_DIST | cv::CALIB_FIX_PRINCIPAL_POINT
     );
 }
 
+//to get undistorted image ------ NOTE: Check**
 cv::Mat cameraCalibration::remap(const cv::Mat& image)
 {
     cv::Mat undistorted;
     if(map1.empty() || map2.empty())
-        cv::initUndistortRectifyMap(cameraMatrix, // computed camera matrix
-                                    distortionCoefficients,   // computed distortion matrix
+        cv::initUndistortRectifyMap(_cameraMatrix, // computed camera matrix
+                                    _distortionCoefficients,   // computed distortion matrix
                                     cv::Mat(),    // optional rectification (none)
                                     cv::Mat(),    // camera matrix to generate undistorted
                                     image.size(),  // size of undistorted
@@ -76,20 +78,64 @@ cv::Mat cameraCalibration::remap(const cv::Mat& image)
     return undistorted;
 }
 
-// save calibration data
+// save calibration data we analyzed to given file path
 void cameraCalibration::save(std::string filePath)
 {
     cv::FileStorage storage(filePath, cv::FileStorage::WRITE);
-    storage << "cameraMatrix" << cameraMatrix;
-    storage << "distortionCoefficients" << distortionCoefficients;
+    storage << "cameraMatrix" << _cameraMatrix;
+    storage << "distortionCoefficients" << _distortionCoefficients;
     storage.release();
 }
 
-// load calibration data
+// load calibration data from the given file path
 void cameraCalibration::load(std::string filePath)
 {
     cv::FileStorage fs(filePath, cv::FileStorage::READ);
-    fs["cameraMatrix"] >> cameraMatrix;
-    fs["distortionCoefficients"] >> distortionCoefficients;
+    fs["cameraMatrix"] >> _cameraMatrix;
+    fs["distortionCoefficients"] >> _distortionCoefficients;
     fs.release();
+}
+
+//get the fical from the camera metrix data
+double cameraCalibration::getFocal()
+{
+    return _cameraMatrix.at<double>(0, 0);
+}
+
+//get specific PARAM from the camera metrix - NOTE: Check*
+cv::Point2d cameraCalibration::getPP() 
+{
+    return cv::Point2d(_cameraMatrix.at<double>(0, 2), _cameraMatrix.at<double>(1, 2));
+}
+
+//get camera matrix
+cv::Mat cameraCalibration::getCameraMatrix()
+{
+    /*| fx  0   cx |
+      | 0   fy  cy |
+      | 0   0   1  |*/
+    return _cameraMatrix;
+}
+
+//get distortion coefficients
+cv::Mat cameraCalibration::getDistortionCoefficients()
+{
+    return _distortionCoefficients;
+}
+
+cv::Mat cameraCalibration::estimateCameraMatrix(double focalLength, cv::Size imageSize)
+{
+    double cx = imageSize.width / 2;
+    double cy = imageSize.height / 2;
+
+    cv::Point2d pp(cx, cy);
+
+    _cameraMatrix = cv::Mat::eye(3, 3, CV_64F);
+
+    _cameraMatrix.at<double>(0, 0) = focalLength;
+    _cameraMatrix.at<double>(1, 1) = focalLength;
+    _cameraMatrix.at<double>(0, 2) = cx;
+    _cameraMatrix.at<double>(1, 2) = cy;
+
+    return _cameraMatrix;
 }

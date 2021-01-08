@@ -2,10 +2,11 @@
 #include <vector>
 #include <set>
 #include <iostream>
+#include <boost/filesystem.hpp>
 
 #include "opencv2/highgui.hpp"
-#include "opencv2/imgproc/imgproc.hpp"
-#include <boost/filesystem.hpp>
+#include "opencv2/imgproc.hpp"
+
 
 namespace fs = boost::filesystem;
 
@@ -19,6 +20,8 @@ private:
 
 public:
 	static loadImages* getInstance();
-	std::vector<std::string> load(const fs::path& dirPath);
+	std::vector<std::string> load(const fs::path& dirPath, bool isSorted);
 	std::vector<std::string> getImages();
+	void sortImagesBySimilarity();
+	int bestMatch(std::string path);
 };
