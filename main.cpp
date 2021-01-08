@@ -60,6 +60,7 @@ int main(int argc, char* argv[])
         auto imagesFeatures = features.getFeatures();
 		//get the PCL and display it using camera position reconstract
         cameraPosition cameraPosition(cameraCalibrator, imagesFeatures, optimization);
+        cameraPosition.savePointCloud(objectImagesPath);
     }
     catch (const std::exception& e)
     {

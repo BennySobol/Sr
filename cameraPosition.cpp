@@ -104,7 +104,7 @@ cameraPosition::cameraPosition(cameraCalibration calib, std::vector<imageFeature
     mythread.join();
 }
 
-// 
+// obtain matches
 void obtainMatches(imageFeatures features, cv::Mat& otherdescriptors, std::vector<cv::Point2d>& outputPoints2d, std::vector<int>& outputPoints2dIdx, bool optimization)
 {
     std::vector<std::vector<cv::DMatch>> matches;
@@ -154,4 +154,13 @@ void cameraPosition::showPointCloud()
         }
         viewer->spinOnce(100);
     }
+}
+
+
+
+// saves the Point cloud to file
+void cameraPosition::savePointCloud(std::string folder)
+{
+    pcl::io::savePLYFileBinary(folder + "\\pclSaved.ply", *_pclPointCloudPtr);
+
 }
