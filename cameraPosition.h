@@ -12,11 +12,11 @@
 
 // point part of PCL contains 3D point and its 2D origin point and color
 struct pointInCloud {
-	int i;
-	int j;
+	int imageIndex;
 
 	cv::Point3d point;
 	int otherKeyPointsIdx;
+
 	float color;
 } typedef pointInCloud;
 

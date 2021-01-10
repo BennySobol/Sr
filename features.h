@@ -3,17 +3,12 @@
 
 #include "opencv2/features2d.hpp"
 
-#include <set>
-
 struct matchingKeyPoints
 {
-	std::vector<cv::Point2f> currentKeyPoints;
-	std::vector<cv::Point2f> otherKeyPoints;
 	std::vector<int> currentKeyPointsIdx;
 	std::vector<int> otherKeyPointsIdx;	
-}typedef matchingKeyPoints;
+} typedef matchingKeyPoints;
 
-//represent interesting points in a image
 struct imageFeatures
 {
 	std::string path;
@@ -30,11 +25,15 @@ struct imageFeatures
 class features
 {
 protected:
-	std::vector<imageFeatures> _features;
+	static std::vector<imageFeatures> _features;
 public:
 	void matchFeatures(cameraCalibration calib, bool optimization=true, bool showMatchingFeature=false);
 	features(std::vector<std::string> images);
+	features(std::string filePath);
 	std::vector<imageFeatures>& getFeatures();
+
+	static void getCurrentKeyPoints(std::vector<cv::Point2f>& currentKeyPoints, int featureIndex);
+	static void getOtherKeyPoints(std::vector<cv::Point2f>& otherKeyPoints, int featureIndex);
 
 	void save(std::string filePath);
 	void load(std::string filePath);

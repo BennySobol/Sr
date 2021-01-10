@@ -6,10 +6,9 @@
 
 std::string xmlFilePath = "../calib.xml";// "calib.xml"; //camera calbration file location
 std::string chessboardImagesPath = ""; // chess board images for camera calibration
-std::string objectImagesPath = "C:\\Users\\BennySobol\\Desktop\\dataset\\fountain-P11\\images"; // Images of object surface to extract points cloud from
+std::string objectImagesPath = "C:\\Users\\BennySobol\\Desktop\\dataset\\fountain-P5\\images"; // Images of object surface to extract points cloud from
 double focalLength = 0;
 bool isSorted = true;
-// TO DO
 bool optimization = true;
 bool showMatchFeatures = true;
 
@@ -27,7 +26,10 @@ int main(int argc, char* argv[])
         std::cout << "Images path were loaded\n";
 		//extract features from every image
         features features(images);
+
+        //features features("features.xml"); //TO DO - FIX
         //features.load("features.xml");
+
         std::cout << "Features were extracted\n";
         if (fs::exists(xmlFilePath)) // load calibration - if exsits
         {
@@ -55,7 +57,9 @@ int main(int argc, char* argv[])
 		//find matching features between every 2 images - do it to all images
         features.matchFeatures(cameraCalibrator, optimization, showMatchFeatures);
         std::cout << "Images features were matched\n";
+
         //features.save("features.xml");
+
 		//load the features
         auto imagesFeatures = features.getFeatures();
 		//get the PCL and display it using camera position reconstract

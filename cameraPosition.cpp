@@ -9,24 +9,31 @@
 // gets camera calib and vector of features
 cameraPosition::cameraPosition(cameraCalibration calib, std::vector<imageFeatures> features, bool optimization) : _pclPointCloudPtrPreviousSize(0)
 {
-    // initialize the pcl point cloud ptr which contains points - with XYZ(3d points) and each point also has Red Green Blue params(RGB)
+    // initialize the pcl point cloud ptr which contains points - each point has XYZ coordinates and also has a Red Green Blue params - RGB
     _pclPointCloudPtr.reset(new pcl::PointCloud<pcl::PointXYZRGB>());
 
-    std::thread mythread([this] { showPointCloud(); }); // thread of showPointCloud - LIVE point cloud update in the viewer
-
     cv::Mat E, rotation, translation, mask, points4D;
+
+    std::vector<cv::Point2f> currentKeyPoints, otherKeyPoints;
+    features::getCurrentKeyPoints(currentKeyPoints ,0);
+    features::getOtherKeyPoints(otherKeyPoints, 0);
+
     // getting essential metrix and recover first camera position
-    E = findEssentialMat(features[0].matchingKeyPoints.currentKeyPoints, features[0].matchingKeyPoints.otherKeyPoints, calib.getFocal(), calib.getPP(), cv::RANSAC, 0.9, 3.0, mask);
-    cv::recoverPose(E, features[0].matchingKeyPoints.currentKeyPoints, features[0].matchingKeyPoints.otherKeyPoints, rotation, translation, calib.getFocal(), calib.getPP(), mask);
+    E = findEssentialMat(currentKeyPoints, otherKeyPoints, calib.getFocal(), calib.getPP(), cv::RANSAC, 0.9, 3.0, mask);
+    cv::recoverPose(E, currentKeyPoints, otherKeyPoints, rotation, translation, calib.getFocal(), calib.getPP(), mask);
+
+    cv::Mat firstProjection, zeros = (cv::Mat_<double>(3, 1) << 0, 0, 0);
+    hconcat(calib.getCameraMatrix(), zeros, firstProjection);
+    features[0].projection = firstProjection;
 
     std::vector<pointInCloud> previous3dPoints;
-
-    cv::Mat firstTranslation, zeros = (cv::Mat_<double>(3, 1) << 0, 0, 0);
-    hconcat(calib.getCameraMatrix(), zeros, firstTranslation);
-    features[0].projection = firstTranslation;
+    std::thread mythread([this] { showPointCloud(); }); // thread of showPointCloud - LIVE point cloud update in the viewer
 
     for (unsigned int i = 1; i < features.size(); i++) // go throw all iamges features
     {
+        features::getCurrentKeyPoints(currentKeyPoints, i - 1);
+        features::getOtherKeyPoints(otherKeyPoints, i - 1);
+
         if (i > 1) // first pair will skip this
         {
             cv::Mat descriptors3d;
@@ -35,8 +42,6 @@ cameraPosition::cameraPosition(cameraCalibration calib, std::vector<imageFeature
             { // descriptors at pointInCloud position
                 descriptors3d.push_back(features[i - 1].descriptors.row(previous3dPoints[j].otherKeyPointsIdx));
             }
-            std::cout << descriptors3d.size();
-            std::cout << features[i - 1].descriptors.cols;
 
             std::vector<cv::Point2d> imagePoints;
             std::vector<int> newObjIndexes;
@@ -61,7 +66,7 @@ cameraPosition::cameraPosition(cameraCalibration calib, std::vector<imageFeature
         // triangulate the points
         hconcat(rotation, translation, translation);
         features[i].projection = calib.getCameraMatrix() * translation;
-        triangulatePoints(features[i - 1].projection, features[i].projection, features[i - 1].matchingKeyPoints.currentKeyPoints, features[i - 1].matchingKeyPoints.otherKeyPoints, points4D);
+        triangulatePoints(features[i - 1].projection, features[i].projection, currentKeyPoints, otherKeyPoints, points4D);
        
 
         for (int j = 0; j < points4D.cols; j++)
@@ -73,10 +78,9 @@ cameraPosition::cameraPosition(cameraCalibration calib, std::vector<imageFeature
 
 
             point.otherKeyPointsIdx =  features[i - 1].matchingKeyPoints.otherKeyPointsIdx[j];
-            point.i = i;
-            point.j = j;
+            point.imageIndex = i;
 
-            cv::Vec3b color = features[i - 1].image.at<cv::Vec3b>(cv::Point(features[i - 1].matchingKeyPoints.currentKeyPoints[j].x, features[i - 1].matchingKeyPoints.currentKeyPoints[j].y));
+            cv::Vec3b color = features[i - 1].image.at<cv::Vec3b>(cv::Point(currentKeyPoints[j].x, currentKeyPoints[j].y));
 
             // color.val[2] - red, color.val[1] - green, color.val[0] - blue
             uint32_t rgb = (color.val[2] << 16 | color.val[1] << 8 | color.val[0]);
@@ -93,14 +97,8 @@ cameraPosition::cameraPosition(cameraCalibration calib, std::vector<imageFeature
     }
     cout << "Number of points in the point cloud " << _pointCloud.size() << endl;
 
- 
-    std::vector<cv::Mat> cameraPoses;
-    for (int i = 0; i < features.size(); i++)
-    {
-        cameraPoses.push_back(features[i].projection);
-    }
-
-    bundleAdjustment::bundleAdjustment(_pointCloud, *_pclPointCloudPtr, cameraPoses, features);
+    bundleAdjustment::bundleAdjustment(_pointCloud, *_pclPointCloudPtr, features);
+    _pclPointCloudPtrPreviousSize++; // force an updated of the cloud in the point cloud viewer
     mythread.join();
 }
 
@@ -137,7 +135,7 @@ void cameraPosition::showPointCloud()
     // initialize the pcl 3D Viewer
     pcl::visualization::PCLVisualizer::Ptr viewer(new pcl::visualization::PCLVisualizer("3D Viewer"));
     // display the point cloud
-    viewer->setBackgroundColor(235, 235, 235);
+    viewer->setBackgroundColor(0, 0, 0);
     viewer->setShowFPS(true);
     viewer->setWindowName("Point Cloud Viewer");
     viewer->initCameraParameters();
@@ -149,13 +147,12 @@ void cameraPosition::showPointCloud()
         {
             viewer->removeAllPointClouds();
             viewer->addPointCloud<pcl::PointXYZRGB>(_pclPointCloudPtr, "point cloud");
-            viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, "point cloud");
+            viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "point cloud");
             _pclPointCloudPtrPreviousSize = _pclPointCloudPtr->size();
         }
         viewer->spinOnce(100);
     }
 }
-
 
 
 // saves the Point cloud to file

@@ -3,14 +3,15 @@
 
 #define RATIO_THRESH 0.7
 
+std::vector<imageFeatures> features::_features;
 
 // detect and compute all of the images features
 features::features(std::vector<std::string> images)
 {
-    //find features using SIFT algorithm/method
+    // find features using SIFT feature detector
     cv::Ptr<cv::FeatureDetector> detector = cv::SIFT::create();
-	//find keypoints and descriptors of image using SIFT for every image in the vector
-	//the detector with detect and compute are locating FEATURES and descriptors
+	// find keypoints and descriptors of image using SIFT for every image in the vector
+	// the detector with detect and compute are locating FEATURES and descriptors
     for (std::string image : images)
     {
         cv::Mat src = cv::imread(image);
@@ -25,6 +26,10 @@ features::features(std::vector<std::string> images)
     }
 }
 
+features::features(std::string filePath)
+{
+    load(filePath);
+}
 
 
 // match the features between the images
@@ -84,14 +89,12 @@ void features::matchFeatures(cameraCalibration calib, bool optimization, bool sh
             }
             else
             {
-                points1.erase(points1.begin() + j);
-                points2.erase(points2.begin() + j);
                 points1Idx.erase(points1Idx.begin() + j);
                 points2Idx.erase(points2Idx.begin() + j);
             }
         }
 
-        _features[i].matchingKeyPoints = { points1, points2, points1Idx, points2Idx };
+        _features[i].matchingKeyPoints = { points1Idx, points2Idx };
 
         std::cout << "Feature matching " << i << " / " << i + 1 << ", good matches " << points1.size() << std::endl;
         if (showMatchingFeature)
@@ -102,6 +105,25 @@ void features::matchFeatures(cameraCalibration calib, bool optimization, bool sh
         }
     }
     cv::destroyAllWindows();
+}
+//1-1 = 0 
+// 1 = 1
+void features::getCurrentKeyPoints(std::vector<cv::Point2f>& currentKeyPoints, int featureIndex)
+{
+    currentKeyPoints.clear();
+    for (int index : _features[featureIndex].matchingKeyPoints.currentKeyPointsIdx)
+    {
+        currentKeyPoints.push_back(_features[featureIndex].keyPoints[index].pt);
+    }
+}
+
+void features::getOtherKeyPoints(std::vector<cv::Point2f>& otherKeyPoints, int featureIndex)
+{
+    otherKeyPoints.clear();
+    for (int index : _features[featureIndex].matchingKeyPoints.otherKeyPointsIdx)
+    {
+        otherKeyPoints.push_back(_features[featureIndex + 1].keyPoints[index].pt);
+    }
 }
 
 //return the features vector
@@ -139,19 +161,15 @@ void features::save(std::string filePath)
 
     storage << "features" << "[";
     for (imageFeatures imageFeatures : _features) {
-        //storage << "path" << imageFeatures.path;
+        storage << "path" << imageFeatures.path;
         storage << "image" << imageFeatures.image;
-        //storage << "keyPoints" << imageFeatures.keyPoints;
-        //orage << "descriptors" << imageFeatures.descriptors;
+        storage << "keyPoints" << imageFeatures.keyPoints;
+        storage << "descriptors" << imageFeatures.descriptors;
         storage << "matchingKeyPoints" << "[";
-        storage << "currentKeyPoints" << imageFeatures.matchingKeyPoints.currentKeyPoints;
-        storage << "otherKeyPoints" << imageFeatures.matchingKeyPoints.otherKeyPoints;
         storage << "currentKeyPointsIdx" << imageFeatures.matchingKeyPoints.currentKeyPointsIdx;
         storage << "otherKeyPointsIdx" << imageFeatures.matchingKeyPoints.otherKeyPointsIdx;
         storage << "]";
-
         storage << "projection" << imageFeatures.projection;
-
     }
     storage << "]";
 
@@ -169,12 +187,8 @@ void features::load(std::string filePath)
         storage["features"][i]["image"] >> _features[i].image;
         storage["features"][i]["keyPoints"] >> _features[i].keyPoints;
         storage["features"][i]["descriptors"] >> _features[i].descriptors;
-
-        storage["features"][i]["descriptors"]["matchingKeyPoints"] >> _features[i].matchingKeyPoints.currentKeyPoints;
-        storage["features"][i]["descriptors"]["matchingKeyPoints"] >> _features[i].matchingKeyPoints.otherKeyPoints;
         storage["features"][i]["descriptors"]["matchingKeyPoints"] >> _features[i].matchingKeyPoints.currentKeyPointsIdx;
         storage["features"][i]["descriptors"]["matchingKeyPoints"] >> _features[i].matchingKeyPoints.otherKeyPointsIdx;
-
         storage["features"][i]["projection"] >> _features[i].projection;
     }
     storage.release();
