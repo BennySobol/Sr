@@ -1,52 +1,62 @@
-#pragma once
-
-#include "cameraPosition.h"
+﻿#pragma once
+#include "structureFromMotion.h"
 
 #include "ceres/ceres.h"
 #include "ceres/rotation.h"
 
 
-struct ReprojectionError {
-    ReprojectionError(const cv::Mat& projection, const cv::Point2f& imagePoint)
-        : _imagePoint(imagePoint), _projection(projection) {}
+struct ReprojectionError
+{
+    ReprojectionError(const cv::Point2f& imagePoint) : _imagePoint(imagePoint) {}
 
-    template<typename T>
-    bool operator()(const T* const point3d, T* residuals) const
- {
+    template <typename T>
+    bool operator()(const T* const camera, const T* const point3d, const T* const K, T* residuals) const
+    {
+        // camera[0,1,2] are the angle-axis rotation.
         T p[3];
-        p[0] = _projection.at<double>(0, 0) * point3d[0] +
-            _projection.at<double>(0, 1) * point3d[1] +
-            _projection.at<double>(0, 2) * point3d[2] +
-            _projection.at<double>(0, 3);
-        p[1] = _projection.at<double>(1, 0) * point3d[0] +
-            _projection.at<double>(1, 1) * point3d[1] +
-            _projection.at<double>(1, 2) * point3d[2] +
-            _projection.at<double>(1, 3);
-        p[2] = _projection.at<double>(2, 0) * point3d[0] +
-            _projection.at<double>(2, 1) * point3d[1] +
-            _projection.at<double>(2, 2) * point3d[2] +
-            _projection.at<double>(2, 3);
+        ceres::AngleAxisRotatePoint(camera, point3d, p);
+        // camera[3,4,5] are the translation.
+        p[0] += camera[3];
+        p[1] += camera[4];
+        p[2] += camera[5];
+        // Compute the center of distortion. The sign change comes from
+        // the camera model that Noah Snavely's Bundler assumes, whereby
+        // the camera coordinate system has a negative z axis.
+        T xp = p[0] / p[2];
+        T yp = p[1] / p[2];
+        // Apply second and fourth order radial distortion.
+        const T& fx = K[0];
+        const T& fy = K[1];
+        const T& cx = K[2];
+        const T& cy = K[3];
 
-        residuals[0] = p[0] / p[2] - T(_imagePoint.x);
-        residuals[1] = p[1] / p[2] - T(_imagePoint.y);
+        // Compute final projected point position.
+
+        T predicted_x = fx * xp + cx;
+        T predicted_y = fy * yp + cy;
+
+        // The error is the difference between the predicted and observed position.
+        residuals[0] = predicted_x - T(_imagePoint.x);
+        residuals[1] = predicted_y - T(_imagePoint.y);
         return true;
     }
 
-    static ceres::CostFunction* create(const cv::Mat& projection, const cv::Point2f& imagePoint)
+    static ceres::CostFunction* create(const cv::Point2f& imagePoint)
     {
-        return (new ceres::AutoDiffCostFunction<ReprojectionError, 2, 3>(new ReprojectionError(projection, imagePoint)));
+        return (new ceres::AutoDiffCostFunction<ReprojectionError, 2, 6, 3, 4>(new ReprojectionError(imagePoint)));
     }
 
     const cv::Point2f& _imagePoint;
-    const cv::Mat& _projection;
 };
 
 class bundleAdjustment
 {
 private:
-
+    void solveProblem();
+    ceres::Problem _problem;
+    double* _points;
 public:
-    bundleAdjustment(std::vector<pointInCloud>& pointCloud, pcl::PointCloud<pcl::PointXYZRGB>& pclPointCloud, const std::vector<imageFeatures>& features);
-    ~bundleAdjustment() = default;
+    bundleAdjustment(std::vector<pointInCloud>& pointCloud, pcl::PointCloud<pcl::PointXYZRGB>& pclPointCloud, const std::vector<imageFeatures>& features, cameraCalibration& claib);
+    ~bundleAdjustment();
 };
 
