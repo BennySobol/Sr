@@ -1,13 +1,13 @@
-#include "cameraPosition.h"
+#include "structureFromMotion.h"
 #include "bundleAdjustment.h"
 
 
 #define RATIO_THRESH 0.7
-
+#define CAMERA_SCALE 0.4
 
 // builds pcl and reconstract camera position
 // gets camera calib and vector of features
-cameraPosition::cameraPosition(cameraCalibration calib, std::vector<imageFeatures> features, bool optimization) : _pclPointCloudPtrPreviousSize(0)
+structureFromMotion::structureFromMotion(cameraCalibration& calib, std::vector<imageFeatures>& features, bool optimization) : _pclPointCloudPtrPreviousSize(0), _cameraMeshesPreviousSize(0)
 {
     // initialize the pcl point cloud ptr which contains points - each point has XYZ coordinates and also has a Red Green Blue params - RGB
     _pclPointCloudPtr.reset(new pcl::PointCloud<pcl::PointXYZRGB>());
@@ -25,6 +25,10 @@ cameraPosition::cameraPosition(cameraCalibration calib, std::vector<imageFeature
     cv::Mat firstProjection, zeros = (cv::Mat_<double>(3, 1) << 0, 0, 0);
     hconcat(calib.getCameraMatrix(), zeros, firstProjection);
     features[0].projection = firstProjection;
+
+    addCameraToVisualizer((cv::Mat_<double>(3, 3) << 1, 0, 0, 0, 1, 0, 0, 0, 1), zeros); // first camera position is without rotation nor translation
+    features[0].rotation = (cv::Mat_<double>(3, 3) << 1, 0, 0, 0, 1, 0, 0, 0, 1);
+    features[0].translation = zeros;
 
     std::vector<pointInCloud> previous3dPoints;
     std::thread mythread([this] { showPointCloud(); }); // thread of showPointCloud - LIVE point cloud update in the viewer
@@ -62,6 +66,9 @@ cameraPosition::cameraPosition(cameraCalibration calib, std::vector<imageFeature
 
             previous3dPoints.clear();
         }
+        addCameraToVisualizer(rotation, translation);
+        features[i].rotation = rotation;
+        features[i].translation = translation;
 
         // triangulate the points
         hconcat(rotation, translation, translation);
@@ -92,13 +99,15 @@ cameraPosition::cameraPosition(cameraCalibration calib, std::vector<imageFeature
             previous3dPoints.push_back(point);
             _pclPointCloudPtr->push_back(pclPoint);
         }
-        cout << "Points cloud " << i - 1 << " / " << i << ", " << "some value" << " points" << endl;
+        cout << "Points cloud " << i - 1 << " / " << i << endl;
 
     }
     cout << "Number of points in the point cloud " << _pointCloud.size() << endl;
+    cout << "Starting Bundle Adjustment" << endl;
 
-    bundleAdjustment::bundleAdjustment(_pointCloud, *_pclPointCloudPtr, features);
+    bundleAdjustment::bundleAdjustment(_pointCloud, *_pclPointCloudPtr, features, calib);
     _pclPointCloudPtrPreviousSize++; // force an updated of the cloud in the point cloud viewer
+    _cameraMeshesPreviousSize++;
     mythread.join();
 }
 
@@ -129,8 +138,7 @@ void obtainMatches(imageFeatures features, cv::Mat& otherdescriptors, std::vecto
     }
 }
 
-
-void cameraPosition::showPointCloud()
+void structureFromMotion::showPointCloud()
 {
     // initialize the pcl 3D Viewer
     pcl::visualization::PCLVisualizer::Ptr viewer(new pcl::visualization::PCLVisualizer("3D Viewer"));
@@ -150,14 +158,65 @@ void cameraPosition::showPointCloud()
             viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "point cloud");
             _pclPointCloudPtrPreviousSize = _pclPointCloudPtr->size();
         }
+        if (_cameraMeshesPreviousSize != _cameraMeshes.size()) // an overkill, should add each camera once
+        {
+            viewer->removeAllShapes();
+            int id = 0;
+            for(const pcl::PolygonMesh cam_mesh : _cameraMeshes)
+            {
+                viewer->removePolygonMesh("polygon" + std::to_string(id));
+                viewer->addPolygonMesh(cam_mesh, "polygon" + std::to_string(id++));
+            }
+            for(const std::pair<pcl::PointXYZRGB, pcl::PointXYZRGB> oneline : _cameraLines)
+            {
+                viewer->addLine(oneline.first, oneline.second, "line" + std::to_string(id++));
+            }
+            _cameraMeshesPreviousSize = _cameraMeshes.size();
+        }
         viewer->spinOnce(100);
     }
 }
 
+void structureFromMotion::addCameraToVisualizer(const cv::Mat rotation, const cv::Mat translation)
+{
+    cv::Mat t = -rotation.t() * translation;
+    cv::Mat right = rotation.row(0).t() * CAMERA_SCALE;
+    cv::Mat up = -rotation.row(1).t() * CAMERA_SCALE;
+    cv::Mat forward = rotation.row(2).t() * CAMERA_SCALE;
+
+    pcl::RGB rgb(255, 50, 50);
+
+    pcl::PointCloud<pcl::PointXYZRGB> pointCloud;
+    pointCloud.push_back(toPointXYZRGB(t, rgb));
+    pointCloud.push_back(toPointXYZRGB(t + forward + right / 1.5 + up / 2.0, rgb));
+    pointCloud.push_back(toPointXYZRGB(t + forward + right / 1.5 - up / 2.0, rgb));
+    pointCloud.push_back(toPointXYZRGB(t + forward - right / 1.5 + up / 2.0, rgb));
+    pointCloud.push_back(toPointXYZRGB(t + forward - right / 1.5 - up / 2.0, rgb));
+
+    int pyramidPolygon[6][3] = { {0,1,2}, {0,3,1}, {0,4,3}, {0,2,4}, {3,1,4}, {2,4,1} };
+    
+    pcl::PolygonMesh polygonMesh;
+    polygonMesh.polygons.resize(6);
+    for (int i = 0; i < 6; i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            polygonMesh.polygons[i].vertices.push_back(pyramidPolygon[i][j]);
+        }
+    }
+    pcl::toPCLPointCloud2(pointCloud, polygonMesh.cloud);
+
+    _cameraMeshes.push_back(polygonMesh);
+    _cameraLines.push_back(std::make_pair(toPointXYZRGB(t, rgb), toPointXYZRGB(t + forward * 2.0, rgb)));
+}
+
+pcl::PointXYZRGB toPointXYZRGB(cv::Mat point3d, pcl::RGB rgb)
+{
+    return pcl::PointXYZRGB(point3d.at<double>(0), point3d.at<double>(1), point3d.at<double>(2), rgb.r, rgb.b, rgb.g);
+}
 
 // saves the Point cloud to file
-void cameraPosition::savePointCloud(std::string folder)
+void structureFromMotion::savePointCloud(std::string filePath)
 {
-    pcl::io::savePLYFileBinary(folder + "\\pclSaved.ply", *_pclPointCloudPtr);
-
+    pcl::io::savePLYFileBinary(filePath, *_pclPointCloudPtr);
 }

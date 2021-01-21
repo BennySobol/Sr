@@ -19,6 +19,8 @@ struct imageFeatures
 	matchingKeyPoints matchingKeyPoints;
 
 	cv::Mat projection;
+	cv::Mat rotation;
+	cv::Mat translation;
 
 } typedef imageFeatures;
 

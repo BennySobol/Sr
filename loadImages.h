@@ -1,14 +1,15 @@
 #pragma once
+#include <iostream>
 #include <vector>
 #include <set>
-#include <iostream>
-#include <boost/filesystem.hpp>
+
 
 #include "opencv2/highgui.hpp"
 #include "opencv2/imgproc.hpp"
 
-
-namespace fs = boost::filesystem;
+#define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING
+#include <experimental/filesystem>
+namespace fs = std::experimental::filesystem;
 
 // Singleton designed
 class loadImages

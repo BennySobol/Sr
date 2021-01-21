@@ -106,8 +106,7 @@ void features::matchFeatures(cameraCalibration calib, bool optimization, bool sh
     }
     cv::destroyAllWindows();
 }
-//1-1 = 0 
-// 1 = 1
+
 void features::getCurrentKeyPoints(std::vector<cv::Point2f>& currentKeyPoints, int featureIndex)
 {
     currentKeyPoints.clear();
@@ -126,7 +125,7 @@ void features::getOtherKeyPoints(std::vector<cv::Point2f>& otherKeyPoints, int f
     }
 }
 
-//return the features vector
+// return the features vector
 std::vector<imageFeatures>& features::getFeatures()
 {
     return _features;

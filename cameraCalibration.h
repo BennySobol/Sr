@@ -24,9 +24,9 @@ private:
       int addChessboardPoints(const std::vector<std::string>& filelist, cv::Size& boardSize);
       double calibrate();
       cv::Mat remap(const cv::Mat& image);
-      cv::Mat getCameraMatrix();
-      cv::Mat getDistortionCoefficients();
-      cv::Point2d cameraCalibration::getPP();
+      cv::Mat& getCameraMatrix();
+      cv::Mat& getDistortionCoefficients();
+      cv::Point2d getPP();
       double getFocal();
       void save(std::string filePath);
       void load(std::string filePath);

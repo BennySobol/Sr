@@ -1,5 +1,6 @@
 #include "loadImages.h"
 
+
 // get loadImages Instance - a Singleton class
 loadImages* loadImages::getInstance()
 {
@@ -8,18 +9,18 @@ loadImages* loadImages::getInstance()
     return &instance;
 }
 
-//loading the images into vector
-//return vector of strings - contains omages names
+// loading the images into vector
+// return vector of strings - contains the images path
 std::vector<std::string> loadImages::load(const fs::path& dirPath, bool isSorted)
 {
-	//filename  extension to locate
+	// filename extension to locate
     std::set<fs::path> exts{ ".jpg", ".JPG", ".jpeg", ".JPEG", ".png", ".PNG" };
-	//check if the path is ok
+	// check if the path is ok
     if (!fs::exists(dirPath) || !fs::is_directory(dirPath))
     {
-        throw std::runtime_error(dirPath.string() + " is not a valid folder");
+       throw std::runtime_error(dirPath.string() + " is not a valid folder");
     }
-	//load the images names from the paths
+	// load the images names from the paths
     for (auto const& entry : fs::recursive_directory_iterator(dirPath))
     {
         if (fs::is_regular_file(entry) && exts.find(entry.path().extension()) != exts.end())
@@ -27,9 +28,9 @@ std::vector<std::string> loadImages::load(const fs::path& dirPath, bool isSorted
             _images.push_back(entry.path().string());
         }
     }
-    //if(!isSorted) // if images are not sorted by names (like pic1, pic2 ...) than sort by similarity
-    //    sortImagesBySimilarity(); // DOES NOT WORK 
-    // TO DO - FIX sortImagesBySimilarity
+    if(!isSorted) // if images are not already sorted by names (like pic1, pic2 ...)
+        sortImagesBySimilarity(); 
+
     if (_images.size() < 2)
     {
         throw std::exception("There mast be at least 2 images in the folder");
@@ -39,9 +40,9 @@ std::vector<std::string> loadImages::load(const fs::path& dirPath, bool isSorted
 
 
 // this function will sort _images vector by the images similarity
-//
 void loadImages::sortImagesBySimilarity()
 {
+    return; // TO DO - FIX sortImagesBySimilarity
     std::vector<std::string> sortedImages;
     int nextIndex = 0, size = _images.size();
     for (int i = 0; i < size; i++) {
@@ -54,8 +55,8 @@ void loadImages::sortImagesBySimilarity()
 }
 
 // this function gets an image path and return the best matching index in _images vector
-//gets image path to find match
-//returns the best match image index
+// gets image path to find match
+// returns the best match image index
 int loadImages::bestMatch(std::string path)
 {
     cv::Mat image_i, image;
@@ -87,12 +88,14 @@ int loadImages::bestMatch(std::string path)
     return maxScoreIndex;
 }
 
-//destractor
+
+// loadImages destractor
 loadImages::~loadImages()
 {
     _images.clear();
 }
-//get the images paths
+
+// get the images paths
 std::vector<std::string> loadImages::getImages()
 {
     return _images;

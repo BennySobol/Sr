@@ -20,17 +20,24 @@ struct pointInCloud {
 	float color;
 } typedef pointInCloud;
 
-class cameraPosition
+// camera motion and pointcloud reconstruction
+class structureFromMotion
 {
 private:
 	std::vector<pointInCloud> _pointCloud;
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr _pclPointCloudPtr;
-
+	std::vector<pcl::PolygonMesh> _cameraMeshes;
+	std::vector<std::pair<pcl::PointXYZRGB, pcl::PointXYZRGB>> _cameraLines;
 	int _pclPointCloudPtrPreviousSize;
-public:
-	cameraPosition(cameraCalibration calib, std::vector<imageFeatures> _features, bool optimization=true);
+	int _cameraMeshesPreviousSize;
+
 	void showPointCloud();
-	void savePointCloud(std::string folder);
+	void addCameraToVisualizer(const cv::Mat rotation, const cv::Mat translation);
+public:
+	structureFromMotion(cameraCalibration& calib, std::vector<imageFeatures>& _features, bool optimization=true);
+	
+	void savePointCloud(std::string filePath);
 };
 
 void obtainMatches(imageFeatures features, cv::Mat& otherdescriptors, std::vector<cv::Point2d>& outputPoints2d, std::vector<int>& outputPoints2dIdx, bool optimization=true);
+inline pcl::PointXYZRGB toPointXYZRGB(cv::Mat point3d, pcl::RGB rgb);

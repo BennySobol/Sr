@@ -109,7 +109,7 @@ cv::Point2d cameraCalibration::getPP()
 }
 
 //get camera matrix
-cv::Mat cameraCalibration::getCameraMatrix()
+cv::Mat& cameraCalibration::getCameraMatrix()
 {
     /*| fx  0   cx |
       | 0   fy  cy |
@@ -118,7 +118,7 @@ cv::Mat cameraCalibration::getCameraMatrix()
 }
 
 //get distortion coefficients
-cv::Mat cameraCalibration::getDistortionCoefficients()
+cv::Mat& cameraCalibration::getDistortionCoefficients()
 {
     return _distortionCoefficients;
 }
