@@ -2,7 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <set>
-
+#include <map>
 
 #include "opencv2/highgui.hpp"
 #include "opencv2/imgproc.hpp"
@@ -26,3 +26,6 @@ public:
 	void sortImagesBySimilarity();
 	int bestMatch(std::string path);
 };
+
+std::string getFileNameWithExtension(std::string path);
+std::string getFileName(std::string path);

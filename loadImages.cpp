@@ -1,4 +1,5 @@
 #include "loadImages.h"
+#include "features.h"
 
 
 // get loadImages Instance - a Singleton class
@@ -23,7 +24,7 @@ std::vector<std::string> loadImages::load(const fs::path& dirPath, bool isSorted
 	// load the images names from the paths
     for (auto const& entry : fs::recursive_directory_iterator(dirPath))
     {
-        if (fs::is_regular_file(entry) && exts.find(entry.path().extension()) != exts.end())
+        if (fs::is_regular_file(entry) && exts.find(entry.path().extension()) != exts.end() && entry.path().filename() != "occluded.jpg")
         {
             _images.push_back(entry.path().string());
         }
@@ -39,10 +40,30 @@ std::vector<std::string> loadImages::load(const fs::path& dirPath, bool isSorted
 }
 
 
+std::map<std::string, cv::Mat> features;
+cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::BRUTEFORCE);
+
 // this function will sort _images vector by the images similarity
 void loadImages::sortImagesBySimilarity()
 {
-    return; // TO DO - FIX sortImagesBySimilarity
+    // find features using SIFT feature detector
+    cv::Ptr<cv::FeatureDetector> detector = cv::SIFT::create();
+    // find keypoints and descriptors of image using SIFT for every image in the vector
+    // the detector with detect and compute are locating FEATURES and descriptors
+    for (std::string path : _images)
+    {
+        cv::Mat src = cv::imread(path, cv::IMREAD_GRAYSCALE);
+        resizeWithAspectRatio(src, 256);
+        if (!src.empty())
+        {
+            cv::Mat descriptors;
+            std::vector<cv::KeyPoint> keypoints;
+            detector->detectAndCompute(src, cv::noArray(), keypoints, descriptors);
+            features[path] = descriptors;
+            std::cout << getFileNameWithExtension(path) << " " << keypoints.size() << " features were extracted\n";
+        }
+    }
+
     std::vector<std::string> sortedImages;
     int nextIndex = 0, size = _images.size();
     for (int i = 0; i < size; i++) {
@@ -59,35 +80,35 @@ void loadImages::sortImagesBySimilarity()
 // returns the best match image index
 int loadImages::bestMatch(std::string path)
 {
-    cv::Mat image_i, image;
-    cv::Mat scoreImg;
-    double maxScore = 0, score;
+    double maxScore = 0, score = 0;
     int maxScoreIndex = 0;
 
-    image = cv::imread(path, cv::IMREAD_COLOR);
-    if (image.empty())
-        return -1;
+    for (int i = 0; i < _images.size(); i++)
+    {
+        std::vector<std::vector<cv::DMatch>> matches;
 
-    for (int i = 0; i < _images.size(); i++) {
+        // 2 nearest neighbour match
+        matcher->knnMatch(features[_images[i]], features[path], matches, 2); // k=2 therefore there will be two DMatch in matches[i]
 
-        image_i = cv::imread(_images[i], cv::IMREAD_COLOR); // loads image itself
-        if (image_i.empty())
-            continue;
-
-        // claculating the similarity between the images using cv functions
-        cv::matchTemplate(image_i, image, scoreImg, cv::TM_CCOEFF_NORMED);
-        cv::minMaxLoc(scoreImg, 0, &score);
+        for (std::vector<cv::DMatch>& matche : matches) // the DMatches in matche vector are arranged in descending order of quality
+        {
+            //good matche is one with small distance measurement
+            if (matche[0].distance < 0.7 * matche[1].distance)
+            {
+                score++;
+            }
+        }
         if (score > maxScore)
         {
             maxScore = score;
             maxScoreIndex = i;
         }
+        score = 0;
     }
     // debug
-    std::cout << path.substr(path.find_last_of("\\") + 1, path.size() - 1) << " with " << _images[maxScoreIndex].substr(_images[maxScoreIndex].find_last_of("\\") + 1, _images[maxScoreIndex].size() - 1)  << " are best match -> score " << maxScore << "\n";
+    std::cout << getFileNameWithExtension(path) << " with " << getFileNameWithExtension(_images[maxScoreIndex]) << " are best match -> score " << maxScore << "\n";
     return maxScoreIndex;
 }
-
 
 // loadImages destractor
 loadImages::~loadImages()
@@ -99,4 +120,15 @@ loadImages::~loadImages()
 std::vector<std::string> loadImages::getImages()
 {
     return _images;
+}
+
+std::string getFileNameWithExtension(std::string path)
+{
+    return path.substr(path.find_last_of("\\") + 1, path.size() - 1);
+}
+
+std::string getFileName(std::string path)
+{
+    std::string fileNameWithExtension = getFileNameWithExtension(path);
+    return fileNameWithExtension.substr(0, fileNameWithExtension.find_first_of('.'));
 }
