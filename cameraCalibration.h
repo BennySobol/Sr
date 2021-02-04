@@ -30,5 +30,5 @@ private:
       double getFocal();
       void save(std::string filePath);
       void load(std::string filePath);
-      cv::Mat estimateCameraMatrix(double focalLength, cv::Size imageSize);
+      cv::Mat& estimateCameraMatrix(double focalLength, cv::Size imageSize);
 };

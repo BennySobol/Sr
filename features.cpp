@@ -1,51 +1,38 @@
 #include "features.h"
 #include "wtypes.h"
+#include "loadImages.h"
 
 #define RATIO_THRESH 0.7
 
 std::vector<imageFeatures> features::_features;
 
 // detect and compute all of the images features
-features::features(std::vector<std::string> images)
+features::features(std::vector<std::string> images, int downScale)
 {
     // find features using SIFT feature detector
     cv::Ptr<cv::FeatureDetector> detector = cv::SIFT::create();
 	// find keypoints and descriptors of image using SIFT for every image in the vector
 	// the detector with detect and compute are locating FEATURES and descriptors
-    for (std::string image : images)
+    for (std::string path : images)
     {
-        cv::Mat src = cv::imread(image);
+        cv::Mat src = cv::imread(path);
+        cv::resize(src, src, src.size() / downScale);
         if (!src.empty())
         {
             cv::Mat descriptors;
             std::vector<cv::KeyPoint> keypoints;
             detector->detectAndCompute(src, cv::noArray(), keypoints, descriptors);
-            _features.push_back(imageFeatures{ image, src, keypoints, descriptors });
-            std::cout << image << " " << keypoints.size() <<" features were extracted\n";
+            _features.push_back(imageFeatures{ path, src, keypoints, descriptors });
+            std::cout << getFileNameWithExtension(path) << " " << keypoints.size() <<" features were extracted\n";
         }
     }
 }
 
-features::features(std::string filePath)
-{
-    load(filePath);
-}
-
-
 // match the features between the images
-void features::matchFeatures(cameraCalibration calib, bool optimization, bool showMatchingFeature)
+void features::matchFeatures(cameraCalibration calib, bool showMatchingFeature)
 {
     int screenWidth = getScreenWidth();
-    cv::Ptr<cv::DescriptorMatcher> matcher;
-   
-    if (optimization)
-    {
-        matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::FLANNBASED);
-    }
-    else
-    {
-        matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::BRUTEFORCE);
-    }
+    cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::BRUTEFORCE);
 
 	//check for all features found
     for (unsigned int i = 0; i < _features.size() - 1; i++)
@@ -74,13 +61,14 @@ void features::matchFeatures(cameraCalibration calib, bool optimization, bool sh
         {
             hconcat(_features[i].image, _features[i + 1].image, image); // create image with image i and image  j
         }
+
         // erase bad matches using fundamental matrix constraints
-        cv::Mat E = findEssentialMat(points1, points2, calib.getFocal(), calib.getPP(), cv::RANSAC, 0.99, 1.0, mask);
+        cv::Mat E = findEssentialMat(points1, points2, calib.getCameraMatrix(), cv::RANSAC, 0.9999999999999999, 1.0, mask);
 
         for (int j = mask.rows - 1; j >= 0; j--)
         {
-            if (mask.at<uchar>(j, 0))
-            {   // if the point was used to solve the value is 1 otherwise 0 
+            if (mask.at<uchar>(j, 0)) // if the point was used to solve the essential matrix - the value is 1 otherwise 0 
+            {
                 if (showMatchingFeature)
                 {
                     // draw line on the image 
@@ -125,6 +113,7 @@ void features::getOtherKeyPoints(std::vector<cv::Point2f>& otherKeyPoints, int f
     }
 }
 
+
 // return the features vector
 std::vector<imageFeatures>& features::getFeatures()
 {
@@ -150,45 +139,4 @@ int getScreenWidth()
     GetWindowRect(hDesktop, &desktop);
 
     return desktop.right; //screen width
-}
-
-
-// saving the features
-void features::save(std::string filePath)
-{
-    cv::FileStorage storage(filePath, cv::FileStorage::WRITE);
-
-    storage << "features" << "[";
-    for (imageFeatures imageFeatures : _features) {
-        storage << "path" << imageFeatures.path;
-        storage << "image" << imageFeatures.image;
-        storage << "keyPoints" << imageFeatures.keyPoints;
-        storage << "descriptors" << imageFeatures.descriptors;
-        storage << "matchingKeyPoints" << "[";
-        storage << "currentKeyPointsIdx" << imageFeatures.matchingKeyPoints.currentKeyPointsIdx;
-        storage << "otherKeyPointsIdx" << imageFeatures.matchingKeyPoints.otherKeyPointsIdx;
-        storage << "]";
-        storage << "projection" << imageFeatures.projection;
-    }
-    storage << "]";
-
-    storage.release();
-}
-
-// NOT WORKING
-void features::load(std::string filePath)
-{
-    cv::FileStorage storage(filePath, cv::FileStorage::READ);
-
-    for (int i = 0; i < storage["features"].size(); i++) 
-    {
-        storage["features"][i]["path"] >> _features[i].path;
-        storage["features"][i]["image"] >> _features[i].image;
-        storage["features"][i]["keyPoints"] >> _features[i].keyPoints;
-        storage["features"][i]["descriptors"] >> _features[i].descriptors;
-        storage["features"][i]["descriptors"]["matchingKeyPoints"] >> _features[i].matchingKeyPoints.currentKeyPointsIdx;
-        storage["features"][i]["descriptors"]["matchingKeyPoints"] >> _features[i].matchingKeyPoints.otherKeyPointsIdx;
-        storage["features"][i]["projection"] >> _features[i].projection;
-    }
-    storage.release();
 }

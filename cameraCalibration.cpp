@@ -123,7 +123,7 @@ cv::Mat& cameraCalibration::getDistortionCoefficients()
     return _distortionCoefficients;
 }
 
-cv::Mat cameraCalibration::estimateCameraMatrix(double focalLength, cv::Size imageSize)
+cv::Mat& cameraCalibration::estimateCameraMatrix(double focalLength, cv::Size imageSize)
 {
     double cx = imageSize.width / 2;
     double cy = imageSize.height / 2;

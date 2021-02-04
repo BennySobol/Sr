@@ -55,8 +55,10 @@ private:
     void solveProblem();
     ceres::Problem _problem;
     double* _points;
+    double* _intrinsics;
+    double* _cameraPose;
 public:
-    bundleAdjustment(std::vector<pointInCloud>& pointCloud, pcl::PointCloud<pcl::PointXYZRGB>& pclPointCloud, const std::vector<imageFeatures>& features, cameraCalibration& claib);
+    bundleAdjustment(std::vector<pointInCloud>& pointCloud, pcl::PointCloud<pcl::PointXYZRGB>& pclPointCloud, std::vector<imageFeatures>& features, cameraCalibration& claib);
     ~bundleAdjustment();
 };
 
