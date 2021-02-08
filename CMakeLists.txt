@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 # Create Project
 project( SFM_Project )
-add_executable( project main.cpp loadImages.cpp loadImages.h features.cpp features.h cameraCalibration.cpp cameraCalibration.h structureFromMotion.cpp structureFromMotion.h bundleAdjustment.cpp bundleAdjustment.h surfaceReconstruction.cpp surfaceReconstruction.h )
+add_executable( project main.cpp loadImages.cpp loadImages.h features.cpp features.h cameraCalibration.cpp cameraCalibration.h structureFromMotion.cpp structureFromMotion.h bundleAdjustment.cpp bundleAdjustment.h surfaceReconstruction.cpp surfaceReconstruction.h meshHolesFiller.cpp meshHolesFiller.h )
 
 set_property( DIRECTORY PROPERTY VS_STARTUP_PROJECT "project" )
 
