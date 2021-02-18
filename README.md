@@ -5,7 +5,8 @@ Sr. is a Structure from motion software:<br>
 The software provide 3D Reconstruction and Camera Tracking.
 
 # Examples
-some images/gifs
+![](docs/pointCloud.gif)
+![](docs/mesh.png)
 
 # Required tools and libraries
 - [CMake](https://cmake.org) for easier building: 
@@ -15,18 +16,18 @@ some images/gifs
 - [CGAL](https://www.cgal.org/download.html) (Open Source license)
 
 # Build
-- download the source code with `git clone https://github.com/***myrepo***` into some root folder "SomePath/XXX"
-- create a build folder within the XXX directory: SomePath/XXX/YYY/build
+- download the source code into some root folder "SomePath/Sr"
+- create a build folder within the Sr directory: SomePath/Sr/Build
 - Set "YOUR OWN" Build DIR dependency in CMakeList.txt
-- run CMake configure within SomePath/XXX/YYY/build as Build directory and SomePath/XXX/YYY as source directory
+- run CMake configure within SomePath/Sr/Build as Build directory and SomePath/Sr as source directory
 - run generate
-- open visual studio solotion in SomePath/XXX/YYY/build/SFM_Project.sln
+- open visual studio solotion in SomePath/Sr/Build/SFM_Project.sln
 
 # Usage
 ### Execute
 
 ```
-Usage: ./project.exe [-h] [-v] [-s] [-d down_scale] [-f focal_length] input_directory
+Usage: ./project.exe [-h] [-v] [-s] [-d down_scale] [-c calib_directory] [-f focal_length] input_directory
 
 Options:
       -h                  Print help message
@@ -42,13 +43,13 @@ Options:
 
 The pipline gets as input images of an object and intrinsic camera parameters, the pipeline creates colored point cloud and turns it into textured mesh.
 
-
 Sr. gets an input directory containing images of an object from multiple views<br>
 first option - using calib.xml:<br>
 second option using - focal length:<br>
 Note that intrinsic camera parameters must be named calib.xml!<br>
 and be in the format:
-```<code><?xml version="1.0"?>
+```
+<?xml version="1.0"?>
 <opencv_storage>
 <cameraMatrix type_id="opencv-matrix">
   <rows>3</rows>
@@ -64,11 +65,10 @@ and be in the format:
 ```
 where:<br>
 `fx, fy` are the focal length on the axis<br>
-`(cx, cy)` is the princple point<br>
+`(cx, cy)` is the principal point<br>
 `k1, k2, p1, p2` and `k3` are the distortion coefficients
 ### Output Data
-Sr. will create new folder in the input drictory named **output**, in this folder the software will crate 
-several files:
+Sr. will create new folder in the input drictory named **output**, in this folder the software will crate several files:
 - **PointCloud.ply** - Colored pointcloud of the object
 - **occluded.jpg** - This images is used tp texture occluded part in the mesh
 - **TexturMesh.mtl** - File containing information about the textuers matrials
