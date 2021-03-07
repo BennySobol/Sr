@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 # Create Project
-project( SFM_Project )
+project( Sr_Project )
 
 file(GLOB SRC_FILES "src/*.h" "src/*.cpp")
 add_executable(project ${SRC_FILES})

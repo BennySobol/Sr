@@ -98,16 +98,6 @@ meshTexturing::meshTexturing(std::vector<imageFeatures>& features, cameraCalibra
 
     saveTextureMesh(saveObjFilePath);
     std::cout << "Textured mesh has been saved" << std::endl;
-
-    //// TO DO: add to visualizer
-    //pcl::visualization::PCLVisualizer::Ptr viewer(new pcl::visualization::PCLVisualizer("Mesh Viewer"));
-
-    //viewer->setBackgroundColor(0, 0, 0);
-    //viewer->addTextureMesh(mesh, "mesh");
-    //viewer->initCameraParameters();
-    //while (!viewer->wasStopped()) {
-    //    viewer->spinOnce(100);
-    //}
 }
 
 

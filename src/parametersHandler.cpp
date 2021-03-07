@@ -30,7 +30,7 @@ void ParametersHandler::printHelp()
 }
 
 //checks all params
-ParametersHandler::ParametersHandler(int argc, char* argv[]) : _showMatch(false), _isSorted(true), _focalLength(0), _downScaleFactor(1), _objectImagesPath(""), _chessboardImagesPath("")
+ParametersHandler::ParametersHandler(int argc, char* argv[]) : showMatch(false), isSorted(true), focalLength(0), downScaleFactor(1), objectImagesPath(""), chessboardImagesPath("")
 {
 	if (argc < 2)
 	{
@@ -53,11 +53,11 @@ ParametersHandler::ParametersHandler(int argc, char* argv[]) : _showMatch(false)
 		}
 		else if( *it == SHOW_MATCH1 || *it == SHOW_MATCH2)
 		{
-			_showMatch = true;
+			showMatch = true;
 		}
 		else if(*it == SORT_IMAGES1 || *it == SORT_IMAGES2)
 		{
-			_isSorted = false;
+			isSorted = false;
 		}
 		else if(*it == DOWN_SCALE1|| *it == DOWN_SCALE2)
 		{
@@ -67,10 +67,10 @@ ParametersHandler::ParametersHandler(int argc, char* argv[]) : _showMatch(false)
 				printHelp();
 				throw std::exception("Main param are invalid");
 			}
-			_downScaleFactor = std::stod((*it), nullptr); // stod throw error if it fails to convert
-			if(_downScaleFactor <= 1)
+			downScaleFactor = std::stod((*it), nullptr); // stod throw error if it fails to convert
+			if(downScaleFactor <= 1)
 			{
-				_downScaleFactor = 1;
+				downScaleFactor = 1;
 			}
 		}
 		else if (*it == FOCAL_LEN1 || *it == FOCAL_LEN2)
@@ -81,7 +81,7 @@ ParametersHandler::ParametersHandler(int argc, char* argv[]) : _showMatch(false)
 				printHelp();
 				throw std::exception("Main param are invalid");
 			}
-			_focalLength = std::stod((*it), nullptr);
+			focalLength = std::stod((*it), nullptr);
 		}
 		else if (*it == CALIB_DIR1 || *it == CALIB_DIR2)
 		{
@@ -91,11 +91,11 @@ ParametersHandler::ParametersHandler(int argc, char* argv[]) : _showMatch(false)
 				printHelp();
 				throw std::exception("Main param are invalid");
 			}
-            _chessboardImagesPath = (*it);
+            chessboardImagesPath = (*it);
 		}
 		else
 		{
-			_objectImagesPath = (*it);
+			objectImagesPath = (*it);
 		}
 	}
 }

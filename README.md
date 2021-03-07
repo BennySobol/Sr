@@ -21,7 +21,7 @@ The software provide 3D Reconstruction and Camera Tracking.
 - Set "YOUR OWN" Build DIR dependency in CMakeList.txt
 - run CMake configure within SomePath/Sr/Build as Build directory and SomePath/Sr as source directory
 - run generate
-- open visual studio solotion in SomePath/Sr/Build/SFM_Project.sln
+- open visual studio solotion in SomePath/Sr/Build/Sr_Project.sln
 
 # Usage
 ### Execute

@@ -9,6 +9,7 @@
 #include <pcl/PolygonMesh.h>
 #include <pcl/conversions.h>
 #include <pcl/io/ply_io.h>
+
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Point_set_3.h>
 #include <CGAL/Point_set_3/IO.h>
@@ -29,7 +30,6 @@
 #include <CGAL/Surface_mesh.h>
 #include <CGAL/Polygon_mesh_processing/triangulate_hole.h>
 #include <CGAL/Polygon_mesh_processing/border.h>
-
 
 typedef CGAL::Exact_predicates_inexact_constructions_kernel kernel;
 typedef CGAL::Point_set_3<kernel::Point_3, kernel::Vector_3> pointSet;
