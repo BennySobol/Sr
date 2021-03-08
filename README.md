@@ -5,8 +5,14 @@ Sr. is a Structure from motion software:<br>
 The software provide 3D Reconstruction and Camera Tracking.
 
 # Examples
+## Temple Ring (46 images)
 ![](docs/pointCloud.gif)
-![](docs/mesh.png)
+![](docs/mesh.gif)
+## Wooden Spool (41 images)
+The images were cropped to reduce computation the time
+![](docs/roll.png)
+![](docs/roll.gif)
+
 
 # Required tools and libraries
 - [CMake](https://cmake.org) for easier building: 
