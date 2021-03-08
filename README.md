@@ -9,7 +9,7 @@ The software provide 3D Reconstruction and Camera Tracking.
 ![](docs/pointCloud.gif)
 ![](docs/mesh.gif)
 ## Wooden Spool (41 images)
-The images were cropped to reduce computation the time
+The images were cropped to reduce computation time
 ![](docs/roll.png)
 ![](docs/roll.gif)
 
