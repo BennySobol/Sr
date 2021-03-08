@@ -74,7 +74,7 @@ where:<br>
 `(cx, cy)` is the principal point<br>
 `k1, k2, p1, p2` and `k3` are the distortion coefficients
 ### Output Data
-Sr. will create new folder in the input drictory named **output**, in this folder the software will crate several files:
+Sr. will create new folder in the input drictory named **output**, in this folder the software will create several files:
 - **PointCloud.ply** - Colored pointcloud of the object
 - **occluded.jpg** - This images is used tp texture occluded part in the mesh
 - **TexturMesh.mtl** - File containing information about the textuers matrials
