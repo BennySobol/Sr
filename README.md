@@ -52,7 +52,7 @@ The pipeline gets as input images of an object and intrinsic camera parameters, 
 Sr. gets an input directory containing images of an object from multiple views<br>
 first option is to use calib.xml<br>
 second option is to use focal length<br>
-Note, if you use choose to use calib.xml as your intrinsic camera parameters you must name the file calib.xml!<br>
+Note, if you choose to use calib.xml as your intrinsic camera parameters you must name the file calib.xml!<br>
 and the file must be in the format:<br>
 ```
 <?xml version="1.0"?>
