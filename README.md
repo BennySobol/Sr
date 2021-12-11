@@ -4,6 +4,7 @@
 Sr. is a Structure from motion software<br>
 The software provides 3D Reconstruction and Camera Tracking.
 
+###  For More Details: [Project Workflow Presentation](https://1drv.ms/p/s!AudVtA3cNIargYUkhE_9iAjjZmI8Yw)
 # Examples
 ## Temple Ring (46 images)
 ![](docs/pointCloud.gif)
@@ -76,6 +77,6 @@ where:<br>
 ### Output Data
 Sr. will create new folder in the input directory named **output**, in this folder the software will create several files:
 - **PointCloud.ply** - Colored pointcloud of the object
-- **occluded.jpg** - This images is used tp texture occluded part in the mesh
+- **occluded.jpg** - This images is used to texture occluded part in the mesh
 - **TexturMesh.mtl** - File containing information about the textures materials
 - **TexturMesh.obj** - Textured mesh of the object
