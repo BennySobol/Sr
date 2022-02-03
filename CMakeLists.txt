@@ -8,7 +8,7 @@ add_executable(project ${SRC_FILES})
 set_property( DIRECTORY PROPERTY VS_STARTUP_PROJECT "project" )
 
 # Find PCL
-find_package( PCL 1.11.1 REQUIRED )
+find_package( PCL REQUIRED )
 
 # Find OpenCV
 set( OpenCV_DIR "C:/opencv/build" )
