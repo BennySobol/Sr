@@ -80,8 +80,5 @@ RUN make install
 WORKDIR /home/user/benny
 RUN git clone https://github.com/BennySobol/Sr
 WORKDIR /home/user/benny/Sr
-RUN cmake build .
-		
-RUN cd build \
-    && make
-	
+RUN cmake build .	
+RUN make
