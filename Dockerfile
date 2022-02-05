@@ -79,6 +79,7 @@ RUN make install
 # Build and compile my code
 WORKDIR /home/user/benny
 RUN git clone https://github.com/BennySobol/Sr
+WORKDIR /home/user/benny/Sr
 RUN cmake build .
 		
 RUN cd build \
