@@ -1,6 +1,5 @@
-#pragma once
 #include "parametersHandler.h"
- 
+
 #define SHOW_HELP1 "-h"
 #define SHOW_HELP2 "-H"
 #define SHOW_MATCH1 "-v"
@@ -14,7 +13,7 @@
 #define CALIB_DIR1 "-c"
 #define CALIB_DIR2 "-C"
 
-void ParametersHandler::printHelp()
+void parametersHandler::printHelp()
 {
 	std::cout << "Usage: project.exe [-h] [-v] [-s] [-d down_scale] [-f focal_length] [-c calib_directory] input_directory" << std::endl;
 	std::cout << "Options:" << std::endl;
@@ -26,16 +25,16 @@ void ParametersHandler::printHelp()
 	std::cout << "		-c calib_directory			  (option 2) Directory to find chess board images for camera calibration" << std::endl;
 	std::cout << "		input_directory               (option 3) Directory to find input images and calib.xml(optinal)" << std::endl;
 	std::cout << "PLEASE NOTE THAT YOU MUST ENTER OR FOCAL LENGTH, OR calib_directory, OR HAVE calib.xml IN THE input_directory NATIVE!" << std::endl;
-	
+
 }
 
 //checks all params
-ParametersHandler::ParametersHandler(int argc, char* argv[]) : showMatch(false), isSorted(true), focalLength(0), downScaleFactor(1), objectImagesPath(""), chessboardImagesPath("")
+parametersHandler::parametersHandler(int argc, char* argv[]) : showMatch(false), isSorted(true), focalLength(0), downScaleFactor(1), objectImagesPath(""), chessboardImagesPath("")
 {
 	if (argc < 2)
 	{
 		printHelp();
-		throw std::exception("Main param are invalid");
+		throw std::runtime_error("Main param are invalid");
 	}
 	std::vector<std::string> paramList;
 	for (int i = 0; i < argc; i++)
@@ -51,24 +50,24 @@ ParametersHandler::ParametersHandler(int argc, char* argv[]) : showMatch(false),
 		{
 			printHelp();
 		}
-		else if( *it == SHOW_MATCH1 || *it == SHOW_MATCH2)
+		else if (*it == SHOW_MATCH1 || *it == SHOW_MATCH2)
 		{
 			showMatch = true;
 		}
-		else if(*it == SORT_IMAGES1 || *it == SORT_IMAGES2)
+		else if (*it == SORT_IMAGES1 || *it == SORT_IMAGES2)
 		{
 			isSorted = false;
 		}
-		else if(*it == DOWN_SCALE1|| *it == DOWN_SCALE2)
+		else if (*it == DOWN_SCALE1 || *it == DOWN_SCALE2)
 		{
 			it++;
 			if (it == paramList.end())
 			{
 				printHelp();
-				throw std::exception("Main param are invalid");
+				throw std::runtime_error("Main param are invalid");
 			}
 			downScaleFactor = std::stod((*it), nullptr); // stod throw error if it fails to convert
-			if(downScaleFactor <= 1)
+			if (downScaleFactor <= 1)
 			{
 				downScaleFactor = 1;
 			}
@@ -79,7 +78,7 @@ ParametersHandler::ParametersHandler(int argc, char* argv[]) : showMatch(false),
 			if (it == paramList.end())
 			{
 				printHelp();
-				throw std::exception("Main param are invalid");
+				throw std::runtime_error("Main param are invalid");
 			}
 			focalLength = std::stod((*it), nullptr);
 		}
@@ -89,9 +88,9 @@ ParametersHandler::ParametersHandler(int argc, char* argv[]) : showMatch(false),
 			if (it == paramList.end())
 			{
 				printHelp();
-				throw std::exception("Main param are invalid");
+				throw std::runtime_error("Main param are invalid");
 			}
-            chessboardImagesPath = (*it);
+			chessboardImagesPath = (*it);
 		}
 		else
 		{

@@ -41,15 +41,16 @@ typedef boost::graph_traits<Mesh>::halfedge_descriptor halfedge_descriptor;
 class surfaceReconstruction
 {
 private:
-    pcl::PolygonMesh _polygonMesh;
+	pcl::PolygonMesh _polygonMesh;
 
-    void colseHoles(Mesh& mesh);
-    bool isHoleToClose(halfedge_descriptor h, Mesh& mesh);
+	void colseHoles(Mesh& mesh);
+	bool isHoleToClose(halfedge_descriptor h, Mesh& mesh);
 
 public:
-    surfaceReconstruction(std::string inputFile, std::string saveFile);
-    ~surfaceReconstruction() = default;
-    void saveMesh(std::string filePath);
-    pcl::PolygonMesh& getPolygonMesh();
+	surfaceReconstruction(std::string inputFile, std::string saveFile);
+	~surfaceReconstruction();
+
+	void saveMesh(std::string filePath);
+	pcl::PolygonMesh& getPolygonMesh();
 };
 

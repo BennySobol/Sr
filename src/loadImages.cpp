@@ -10,8 +10,9 @@ loadImages* loadImages::getInstance()
 
 // loading the images into vector
 // return vector of strings - contains the images path
-std::vector<std::string> loadImages::load(const fs::path& dirPath, bool isSorted)
+std::vector<std::string> loadImages::load(const fs::path& dirPath, const bool isSorted)
 {
+	_images.clear();
 	// filename extension to locate
 	std::vector<fs::path> exts{ ".jpg", ".JPG", ".jpeg", ".JPEG", ".png", ".PNG" };
 	// check if the path is ok
@@ -34,7 +35,7 @@ std::vector<std::string> loadImages::load(const fs::path& dirPath, bool isSorted
 
 	if (_images.size() < 2)
 	{
-		throw std::exception("There mast be at least 2 images in the folder");
+		throw std::runtime_error("There mast be at least 2 images in the folder");
 	}
 	return _images;
 }

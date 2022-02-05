@@ -7,6 +7,9 @@
 #include <pcl/point_cloud.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/filters/radius_outlier_removal.h>
+#include <pcl/filters/statistical_outlier_removal.h>
+
+#include <future>
 
 // point part of PCL contains 3D point and its 2D origin point and color
 struct pointInCloud {
@@ -28,13 +31,11 @@ private:
 	cv::Scalar _averageColor;
 	visualizer* _visualizer;
 
-	void obtainMatches(imageFeatures features, cv::Mat descriptors3d, std::vector<cv::Point2d>& imagePoints2d, std::vector<cv::Point3d>& objectPoints3d, std::vector<pointInCloud> previous3dPoints);
+	void obtainMatches(imageFeatures features, cv::Mat descriptors3d, std::vector<cv::Point2d>& imagePoints2d,
+		std::vector<cv::Point3d>& objectPoints3d, std::vector<pointInCloud> previous3dPoints);
 	void addPoints4DToPointCloud(cv::Mat points4D, imageFeatures feature, int index, std::vector<cv::Point2f> currentKeyPoints);
 public:
-	structureFromMotion(cameraCalibration& calib, std::vector<imageFeatures>& _features, double cameraScale = 0.4);
-	~structureFromMotion()
-	{
-		delete _visualizer;
-	}
+	structureFromMotion(double cameraScale = 0.4);
+	~structureFromMotion();
 	void savePointCloud(std::string filePath);
 };

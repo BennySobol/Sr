@@ -1,18 +1,19 @@
 #include "structureFromMotion.h"
 #include "bundleAdjustment.h"
-
-#include <pcl/filters/statistical_outlier_removal.h>
 #include "loadImages.h"
+
 #define RATIO_THRESH 0.7
 
 // builds pcl and reconstract camera position
 // gets camera calib and vector of features
-structureFromMotion::structureFromMotion(cameraCalibration& calib, std::vector<imageFeatures>& features, double cameraScale)
+structureFromMotion::structureFromMotion(double cameraScale)
 {
+	std::vector<imageFeatures>& features = features::getFeatures();
+	cv::Mat cameraMatrix = cameraCalibration::getCameraMatrix();
 	// initialize the pcl point cloud ptr which contains points - each point has XYZ coordinates and also has a Red Green Blue params - RGB
 	_pclPointCloudPtr.reset(new pcl::PointCloud<pcl::PointXYZRGB>());
 
-	_visualizer = new visualizer(calib, features, _pclPointCloudPtr, cameraScale);
+	_visualizer = new visualizer(_pclPointCloudPtr, cameraScale);
 
 	cv::Mat E, rotation, translation, points4D;
 
@@ -21,12 +22,12 @@ structureFromMotion::structureFromMotion(cameraCalibration& calib, std::vector<i
 	features::getOtherKeyPoints(otherKeyPoints, 0);
 
 	// getting essential metrix and recover second camera position
-	E = findEssentialMat(currentKeyPoints, otherKeyPoints, calib.getCameraMatrix(), cv::RANSAC, 0.9999999999999999, 1.0);
+	E = findEssentialMat(currentKeyPoints, otherKeyPoints, cameraMatrix, cv::RANSAC, 0.9999999999999999, 1.0);
 
-	cv::recoverPose(E, currentKeyPoints, otherKeyPoints, calib.getCameraMatrix(), rotation, translation);
+	cv::recoverPose(E, currentKeyPoints, otherKeyPoints, cameraMatrix, rotation, translation);
 
 	cv::Mat firstProjection, firstTranslation = (cv::Mat_<double>(3, 1) << 0, 0, 0);
-	hconcat(calib.getCameraMatrix(), firstTranslation, firstProjection);
+	hconcat(cameraMatrix, firstTranslation, firstProjection);
 	features[0].projection = firstProjection;
 
 	features[0].rotation = (cv::Mat_<double>(3, 3) << 1, 0, 0, 0, 1, 0, 0, 0, 1);
@@ -59,7 +60,19 @@ structureFromMotion::structureFromMotion(cameraCalibration& calib, std::vector<i
 
 			double maxVal;
 			cv::minMaxIdx(imagePoints2d, nullptr, &maxVal);
-			cv::solvePnPRansac(objectPoints3d, imagePoints2d, calib.getCameraMatrix(), calib.getDistortionCoefficients(), rotation, translation, true, INT_MAX, maxVal * 0.0023, 0.9999999999999999);
+
+			std::future<void> future = std::async(std::launch::async,
+				[&]() // capturing all Local variables by Reference
+				{
+					cv::solvePnPRansac(objectPoints3d, imagePoints2d, cameraMatrix, cameraCalibration::getDistortionCoefficients(),
+						rotation, translation, true, INT_MAX, maxVal * 0.0023, 0.9999999999999999);
+				});
+
+			if (future.wait_for(std::chrono::seconds(15)) == std::future_status::timeout)
+			{ // if solvePnPRansac is in timeout we should break the images sequence
+				features.erase(features.begin() + i, features.end());
+				break;
+			}
 
 			// Convert from Rodrigues format to rotation matrix and build the 3x4 Transformation matrix
 			cv::Rodrigues(rotation, rotation);
@@ -71,7 +84,7 @@ structureFromMotion::structureFromMotion(cameraCalibration& calib, std::vector<i
 
 		// triangulate the points
 		hconcat(rotation, translation, translation);
-		features[i].projection = calib.getCameraMatrix() * translation;
+		features[i].projection = cameraMatrix * translation;
 		triangulatePoints(features[i - 1].projection, features[i].projection, currentKeyPoints, otherKeyPoints, points4D);
 
 		addPoints4DToPointCloud(points4D, features[i - 1], i, currentKeyPoints);
@@ -86,15 +99,15 @@ structureFromMotion::structureFromMotion(cameraCalibration& calib, std::vector<i
 	cv::Mat avrageColorImage(features[0].image.size().height, features[0].image.size().width, CV_8UC3, _averageColor);
 	cv::imwrite(features[0].path.substr(0, features[0].path.find_last_of('\\') + 1) + "output\\occluded.jpg", avrageColorImage);
 
-	bundleAdjustment(_pointCloud, *_pclPointCloudPtr, features, calib);
+	bundleAdjustment(_pointCloud, *_pclPointCloudPtr);
 	_visualizer->updateAll();
 
 	//clean the cloud using radius of neighbors method
 	std::cout << "Bundle Adjustment finished. Starting Noise Clean" << endl;
 	pcl::StatisticalOutlierRemoval<pcl::PointXYZRGB> sor;
 	sor.setInputCloud(_pclPointCloudPtr);
-	sor.setMeanK(32); // Set to consider the number of neighboring points of the query point when performing statistics
-	sor.setStddevMulThresh(1); // Set whether the judgment is the inverse value of the outlier, x = 1.
+	sor.setMeanK(32); // set to consider the number of neighboring points of the query point when performing statistics
+	sor.setStddevMulThresh(1); // set whether the judgment is the inverse value of the outlier, x = 1.
 	sor.filter(*_pclPointCloudPtr);
 
 	_visualizer->update();
@@ -108,18 +121,18 @@ void structureFromMotion::addPoints4DToPointCloud(cv::Mat points4D, imageFeature
 		pointInCloud point;
 
 		// convert point from homogeneous to 3d cartesian coordinates
-		point.point = cv::Point3d(points4D.at<float>(0, j) / points4D.at<float>(3, j), points4D.at<float>(1, j) / points4D.at<float>(3, j), points4D.at<float>(2, j) / points4D.at<float>(3, j));
+		point.point = cv::Point3d(points4D.at<float>(0, j) / points4D.at<float>(3, j),
+			points4D.at<float>(1, j) / points4D.at<float>(3, j), points4D.at<float>(2, j) / points4D.at<float>(3, j));
 
-		point.otherKeyPointsIdx = feature.matchingKeyPoints.otherKeyPointsIdx[j];
+		point.otherKeyPointsIdx = feature._matchingKeyPoints.otherKeyPointsIdx[j];
 		point.imageIndex = index;
 
 		cv::Vec3b color = feature.image.at<cv::Vec3b>(cv::Point(currentKeyPoints[j].x, currentKeyPoints[j].y));
-
 		// color.val[2] - red, color.val[1] - green, color.val[0] - blue
 		uint32_t rgb = (color.val[2] << 16 | color.val[1] << 8 | color.val[0]);
 		point.color = *reinterpret_cast<float*>(&rgb);
-		// (x, y, z, r, g, b)
-		pcl::PointXYZRGB pclPoint(point.point.x, point.point.y, point.point.z, color.val[2], color.val[1], color.val[0]);
+		pcl::PointXYZRGB pclPoint(point.point.x, point.point.y, point.point.z);
+		pclPoint.rgb = *reinterpret_cast<float*>(&rgb);
 
 		// average color of all points in the point cloud - (blue green red)
 		_averageColor += (cv::Scalar(color.val[0], color.val[1], color.val[2]) - _averageColor) / (int)(_pointCloud.size() + 1);
@@ -131,7 +144,8 @@ void structureFromMotion::addPoints4DToPointCloud(cv::Mat points4D, imageFeature
 }
 
 // obtain matches between previous 3d points and current image 2d points
-void structureFromMotion::obtainMatches(imageFeatures features, cv::Mat descriptors3d, std::vector<cv::Point2d>& imagePoints2d, std::vector<cv::Point3d>& objectPoints3d, std::vector<pointInCloud> previous3dPoints)
+void structureFromMotion::obtainMatches(imageFeatures features, cv::Mat descriptors3d,
+	std::vector<cv::Point2d>& imagePoints2d, std::vector<cv::Point3d>& objectPoints3d, std::vector<pointInCloud> previous3dPoints)
 {
 	std::vector<std::vector<cv::DMatch>> matches;
 	cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::BRUTEFORCE);
@@ -152,4 +166,12 @@ void structureFromMotion::obtainMatches(imageFeatures features, cv::Mat descript
 void structureFromMotion::savePointCloud(std::string filePath)
 {
 	pcl::io::savePLYFileBinary(filePath, *_pclPointCloudPtr);
+}
+
+structureFromMotion::~structureFromMotion()
+{
+	_pointCloud.clear();
+	_previous3dPoints.clear();
+	_pclPointCloudPtr->clear();
+	delete _visualizer;
 }

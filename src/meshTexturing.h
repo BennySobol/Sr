@@ -22,7 +22,8 @@ private:
 	// The texture mesh object that will contain our UV-mapped mesh
 	pcl::TextureMesh _texturedMesh;
 public:
-	meshTexturing(std::vector<imageFeatures>& features, cameraCalibration& calib, std::string plyFilePath, std::string saveObjFilePath, pcl::PolygonMesh triangles);
+	meshTexturing(std::string plyFilePath, std::string saveObjFilePath, pcl::PolygonMesh& triangles);
+	~meshTexturing();
 	void saveTextureMesh(std::string filePath);
 };
 

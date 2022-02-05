@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-class ParametersHandler
+class parametersHandler
 {
 private:
 	void printHelp();
@@ -15,5 +15,5 @@ public:
 	std::string chessboardImagesPath; // chess board images for camera calibration
 	std::string objectImagesPath; // folder with images of an object - requierd
 
-	ParametersHandler(int argc, char* argv[]);
+	parametersHandler(int argc, char* argv[]);
 };

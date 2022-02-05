@@ -14,15 +14,14 @@ class visualizer
 {
 private:
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr _pclPointCloudPtr;
-	std::vector<imageFeatures>& _features;
-	cameraCalibration& _calib;
 	double _cameraScale;
 	bool _isUpdateRequired;
 	int _curentCameraIdx;
 	void addCamerasToViewer(pcl::visualization::PCLVisualizer::Ptr& viewer);
 	pcl::PointXYZ toPointXYZ(cv::Mat point3d);
 public:
-	visualizer(cameraCalibration& calib, std::vector<imageFeatures>& features, pcl::PointCloud<pcl::PointXYZRGB>::Ptr& pclPointCloudPtr, double cameraScale);
+	visualizer(pcl::PointCloud<pcl::PointXYZRGB>::Ptr& pclPointCloudPtr, double cameraScale);
+	~visualizer();
 	void show();
 	void update();
 	void updateAll();

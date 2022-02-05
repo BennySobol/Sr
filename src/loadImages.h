@@ -7,9 +7,8 @@
 
 #include "features.h"
 
-#define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING
-#include <experimental/filesystem>
-namespace fs = std::experimental::filesystem;
+#include <boost/filesystem.hpp>
+namespace fs = boost::filesystem;
 
 // Singleton designed
 class loadImages
@@ -21,7 +20,7 @@ private:
 
 public:
 	static loadImages* getInstance();
-	std::vector<std::string> load(const fs::path& dirPath, bool isSorted);
+	std::vector<std::string> load(const fs::path& dirPath, const bool isSorted = true);
 	std::vector<std::string> getImages();
 };
 

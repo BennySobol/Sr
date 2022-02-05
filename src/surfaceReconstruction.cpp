@@ -22,10 +22,9 @@ surfaceReconstruction::surfaceReconstruction(std::string inputFile, std::string 
 
 	// Compute average spacing using neighborhood of 6 points
 	double averageSpacing = CGAL::compute_average_spacing<CGAL::Sequential_tag>(points, 6);
+	// TOFIX!
+	// CGAL::remove_outliers<CGAL::Sequential_tag>(points, 16, points.parameters().threshold_percent(100).threshold_distance(2 * averageSpacing));
 
-	CGAL::remove_outliers<CGAL::Sequential_tag>(points, 16, points.parameters().threshold_percent(100).threshold_distance(2 * averageSpacing));
-	// object does not erase the points from memory but place them in the garbage of the object
-	points.collect_garbage();
 	std::cout << "Outliers were removed" << std::endl;
 
 	CGAL::grid_simplify_point_set(points, 2 * averageSpacing);
@@ -35,7 +34,7 @@ surfaceReconstruction::surfaceReconstruction(std::string inputFile, std::string 
 
 	CGAL::Scale_space_surface_reconstruction_3<kernel> reconstruct(points.points().begin(), points.points().end());
 	// Smooth using iterations of Jet Smoothing
-	reconstruct.increase_scale(12);
+	reconstruct.increase_scale(24);
 	// Mesh with the Advancing Front mesher with a maximum facet length of 0.5
 	reconstruct.reconstruct_surface(CGAL::Scale_space_reconstruction_3::Advancing_front_mesher<kernel>(0.5));
 	std::cout << "Surface reconstruction is finished" << std::endl;
@@ -81,14 +80,14 @@ surfaceReconstruction::surfaceReconstruction(std::string inputFile, std::string 
 // information from https://doc.cgal.org/latest/Polygon_mesh_processing/index.html#PMPHoleFilling
 bool surfaceReconstruction::isHoleToClose(halfedge_descriptor h, Mesh& mesh)
 {
-	double maxHoleDiam = 800;
+	double maxHoleDiam = 850;
 	int maxNumHoleEdges = 35;
 	int num_hole_edges = 0;
 	CGAL::Bbox_3 hole_bbox;
 	for (halfedge_descriptor hc : CGAL::halfedges_around_face(h, mesh))
 	{
 		hole_bbox += mesh.point(target(hc, mesh)).bbox();
-		if (++num_hole_edges > maxNumHoleEdges) return false;
+		//if (++num_hole_edges > maxNumHoleEdges) return false;
 		if (hole_bbox.xmax() - hole_bbox.xmin() > maxHoleDiam) return false;
 		if (hole_bbox.ymax() - hole_bbox.ymin() > maxHoleDiam) return false;
 		if (hole_bbox.zmax() - hole_bbox.zmin() > maxHoleDiam) return false;
@@ -130,4 +129,10 @@ void surfaceReconstruction::saveMesh(std::string filePath)
 pcl::PolygonMesh& surfaceReconstruction::getPolygonMesh()
 {
 	return _polygonMesh;
+}
+
+surfaceReconstruction::~surfaceReconstruction()
+{
+	_polygonMesh.cloud.data.clear();
+	_polygonMesh.polygons.clear();
 }

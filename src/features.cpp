@@ -1,5 +1,5 @@
 #include "features.h"
-#include "wtypes.h"
+//#include "wtypes.h"
 
 
 #pragma warning(disable:26451)
@@ -26,10 +26,10 @@ void features::matchFeatures(imageFeatures& firstImageFeatures, imageFeatures& s
 	std::vector<cv::Point2f>& firstPoints, std::vector<cv::Point2f>& secondPoints)
 {
 	std::vector<std::vector<cv::DMatch>> matches;
-	std::vector<int>& firstPointsIdx = firstImageFeatures.matchingKeyPoints.currentKeyPointsIdx;
-	std::vector<int>& secondPointsIdx = firstImageFeatures.matchingKeyPoints.otherKeyPointsIdx;
-	// 2 nearest neighbour match
-	_matcher->knnMatch(firstImageFeatures.descriptors, secondImageFeatures.descriptors, matches, 2); // k=2 therefore there will be two DMatch in matches[i]
+	std::vector<int>& firstPointsIdx = firstImageFeatures._matchingKeyPoints.currentKeyPointsIdx;
+	std::vector<int>& secondPointsIdx = firstImageFeatures._matchingKeyPoints.otherKeyPointsIdx;
+	// 2 nearest neighbour match, k=2 therefore there will be two DMatch in matches[i]
+	_matcher->knnMatch(firstImageFeatures.descriptors, secondImageFeatures.descriptors, matches, 2);
 
 	for (std::vector<cv::DMatch>& matche : matches) // the DMatches in matche vector are arranged in descending order of quality
 	{
@@ -47,7 +47,7 @@ void features::matchFeatures(imageFeatures& firstImageFeatures, imageFeatures& s
 
 
 // match the features between the images
-void features::matchAllFeatures(cameraCalibration calib, bool showMatchingFeature)
+void features::matchAllFeatures(bool showMatchingFeature)
 {
 	int screenWidth = getScreenWidth();
 
@@ -55,8 +55,8 @@ void features::matchAllFeatures(cameraCalibration calib, bool showMatchingFeatur
 	for (unsigned int i = 0; i < _features.size() - 1; i++)
 	{
 		std::vector<cv::Point2f> firstPoints, secondPoints;
-		std::vector<int>& firstPointsIdx = _features[i].matchingKeyPoints.currentKeyPointsIdx;
-		std::vector<int>& secondPointsIdx = _features[i].matchingKeyPoints.otherKeyPointsIdx;
+		std::vector<int>& firstPointsIdx = _features[i]._matchingKeyPoints.currentKeyPointsIdx;
+		std::vector<int>& secondPointsIdx = _features[i]._matchingKeyPoints.otherKeyPointsIdx;
 
 		cv::Mat image, mask;
 		matchFeatures(_features[i], _features[i + 1], firstPoints, secondPoints);
@@ -66,7 +66,7 @@ void features::matchAllFeatures(cameraCalibration calib, bool showMatchingFeatur
 		}
 
 		// erase bad matches using fundamental matrix constraints
-		cv::Mat E = findEssentialMat(firstPoints, secondPoints, calib.getCameraMatrix(), cv::RANSAC, 0.9999999999999999, 1.0, mask);
+		cv::Mat E = findEssentialMat(firstPoints, secondPoints, cameraCalibration::getCameraMatrix(), cv::RANSAC, 0.9999999999999999, 1.0, mask);
 
 		for (int j = mask.rows - 1; j >= 0; j--)
 		{
@@ -85,7 +85,7 @@ void features::matchAllFeatures(cameraCalibration calib, bool showMatchingFeatur
 			}
 		}
 
-		if (_features[i].matchingKeyPoints.currentKeyPointsIdx.size() < 20)
+		if (_features[i]._matchingKeyPoints.currentKeyPointsIdx.size() < 20)
 		{
 			_features.erase(_features.begin() + i, _features.end());
 			break;
@@ -104,7 +104,7 @@ void features::matchAllFeatures(cameraCalibration calib, bool showMatchingFeatur
 void features::getCurrentKeyPoints(std::vector<cv::Point2f>& currentKeyPoints, int featureIndex)
 {
 	currentKeyPoints.clear();
-	for (int index : _features[featureIndex].matchingKeyPoints.currentKeyPointsIdx)
+	for (int index : _features[featureIndex]._matchingKeyPoints.currentKeyPointsIdx)
 	{
 		currentKeyPoints.push_back(_features[featureIndex].keyPoints[index].pt);
 	}
@@ -113,7 +113,7 @@ void features::getCurrentKeyPoints(std::vector<cv::Point2f>& currentKeyPoints, i
 void features::getOtherKeyPoints(std::vector<cv::Point2f>& otherKeyPoints, int featureIndex)
 {
 	otherKeyPoints.clear();
-	for (int index : _features[featureIndex].matchingKeyPoints.otherKeyPointsIdx)
+	for (int index : _features[featureIndex]._matchingKeyPoints.otherKeyPointsIdx)
 	{
 		otherKeyPoints.push_back(_features[featureIndex + 1].keyPoints[index].pt);
 	}
@@ -123,8 +123,8 @@ int features::matchFeaturesScore(cv::Mat firstImageDescriptors, cv::Mat secondIm
 {
 	int score = 0;
 	std::vector<std::vector<cv::DMatch>> matches;
-	// 2 nearest neighbour match
-	_matcher->knnMatch(firstImageDescriptors, secondImageDescriptors, matches, 2); // k=2 therefore there will be two DMatch in matches[i]
+	// 2 nearest neighbour match, k=2 therefore there will be two DMatch in matches[i]
+	_matcher->knnMatch(firstImageDescriptors, secondImageDescriptors, matches, 2);
 
 	// the DMatches in matche vector are arranged in descending order of quality
 	for (std::vector<cv::DMatch>& matche : matches)
@@ -142,7 +142,6 @@ int features::matchFeaturesScore(cv::Mat firstImageDescriptors, cv::Mat secondIm
 // function to find the maximum cost path for all possible the paths
 std::vector<int> features::findMaxRoute(const std::vector<std::vector<int>> scoreMatrix)
 {
-	int sum = 0;
 	int counter = 0;
 	int j = 0, i = 0;
 	int max = INT_MIN;
@@ -175,7 +174,6 @@ std::vector<int> features::findMaxRoute(const std::vector<std::vector<int>> scor
 		// Check all paths from the ith indexed city
 		if (j == scoreMatrix[i].size())
 		{
-			sum += max;
 			max = INT_MIN;
 			visitedRouteList[route[counter] - 1] = 1;
 			j = 0;
@@ -196,27 +194,19 @@ std::vector<int> features::findMaxRoute(const std::vector<std::vector<int>> scor
 			route[counter] = j + 1;
 		}
 	}
-	sum += max;
-
-	// started from the node where we finished as well.
-	std::cout << "Max score sum is : " << sum << std::endl;
-	for (int i = 0; i < scoreMatrix.size(); i++)
-	{
-		std::cout << route[i] - 1 << " ";
-	}
-	std::cout << std::endl;
 	return route;
 }
 
 void features::sortImages(std::vector<std::string>& images)
 {
+	std::cout << "Calculating image width for 800 features" << std::endl;
 	std::map<std::string, cv::Mat> descriptors;
 	int size = 0;
-	for (int i = 1; i < 5; i++)
+	for (int i = 1; i < 4; i++)
 	{
-		size += (widthFor900Features(images[(images.size() / 5) + i - 1]) - size) / i;
-		std::cout << size << std::endl;
+		size += (widthFor800Features(images[(images.size() / 4) + i - 1]) - size) / i;
 	}
+	std::cout << "Size is " << size << std::endl;
 	for (std::string path : images)
 	{
 		descriptors[path] = smallExtractFeatures(path, size);
@@ -255,6 +245,22 @@ std::vector<imageFeatures>& features::getFeatures()
 	return _features;
 }
 
+features::~features()
+{
+	for (int i = 0; i < _features.size(); i++)
+	{
+		_features[i].image.release();
+		_features[i].keyPoints.clear();
+		_features[i].descriptors.release();
+		_features[i]._matchingKeyPoints.currentKeyPointsIdx.clear();
+		_features[i]._matchingKeyPoints.otherKeyPointsIdx.clear();
+		_features[i].projection.release();
+		_features[i].rotation.release();
+		_features[i].translation.release();
+	}
+	_features.clear();
+}
+
 // resize image height to be with aspect ratio with a given width
 void resizeWithAspectRatio(cv::Mat& image, int width)
 {
@@ -267,13 +273,14 @@ void resizeWithAspectRatio(cv::Mat& image, int width)
 // get the screen width
 int getScreenWidth()
 {
-	RECT desktop;
-	// Get a handle to the desktop window
-	const HWND hDesktop = GetDesktopWindow();
+//	RECT desktop;
+//	// Get a handle to the desktop window
+//	const HWND hDesktop = GetDesktopWindow();
 	// Get the size of screen to the variable desktop
-	GetWindowRect(hDesktop, &desktop);
+//	GetWindowRect(hDesktop, &desktop);
 
-	return desktop.right; //screen width
+//	return desktop.right; //screen width
+	return 1500;
 }
 
 std::string getFileNameWithExtension(std::string path)

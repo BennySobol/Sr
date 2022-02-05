@@ -25,4 +25,5 @@ find_package( CGAL REQUIRED )
 # [Linker]>[Input]>[Additional Dependencies]
 target_link_libraries( project ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} ${CERES_LIBRARIES} ${CGAL_LIBRARIES} )
 
+# install(TARGETS project DESTINATION bin)
 

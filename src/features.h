@@ -32,7 +32,7 @@ struct imageFeatures
 	std::vector<cv::KeyPoint> keyPoints;
 	cv::Mat descriptors;
 
-	matchingKeyPoints matchingKeyPoints;
+	matchingKeyPoints _matchingKeyPoints;
 
 	cv::Mat projection;
 	cv::Mat rotation;
@@ -57,7 +57,7 @@ protected:
 	static std::vector<imageFeatures> _features;
 private:
 	inline static cv::Mat smallExtractFeatures(std::string path, int size);
-	inline static int widthFor900Features(std::string path);
+	inline static int widthFor800Features(std::string path);
 	inline static imageFeatures extractFeatures(std::string path, double downScale = 1);
 	static int matchFeaturesScore(cv::Mat firstImageDescriptors, cv::Mat secondImageDescriptors);
 	static void matchFeatures(imageFeatures& firstImageFeatures, imageFeatures& secondImageFeatures,
@@ -66,16 +66,18 @@ private:
 	static cv::Ptr<cv::FeatureDetector> _detector;
 	static cv::Ptr<cv::DescriptorMatcher> _matcher;
 public:
-	void matchAllFeatures(cameraCalibration calib, bool showMatchingFeature = false);
+	void matchAllFeatures(bool showMatchingFeature = false);
 	features(std::vector<std::string> images, double downScaleFactor = 1);
-	std::vector<imageFeatures>& getFeatures();
+	~features();
+	static std::vector<imageFeatures>& getFeatures();
 
 	static void sortImages(std::vector<std::string>& images);
 	static void getCurrentKeyPoints(std::vector<cv::Point2f>& currentKeyPoints, int featureIndex);
 	static void getOtherKeyPoints(std::vector<cv::Point2f>& otherKeyPoints, int featureIndex);
 };
 
-int features::widthFor900Features(std::string path)
+
+int features::widthFor800Features(std::string path)
 {
 	std::vector<cv::KeyPoint> keypoints;
 	cv::Mat src = cv::imread(path, cv::IMREAD_GRAYSCALE);
@@ -90,7 +92,7 @@ int features::widthFor900Features(std::string path)
 		resizeWithAspectRatio(save, size);
 		_detector->detect(save, keypoints);
 		save = src;
-		size += 100;
+		size += 50;
 	}
 	return size;
 }
