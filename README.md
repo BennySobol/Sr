@@ -6,30 +6,33 @@ The software provide 3D Reconstruction and Camera Tracking.
 
 # Examples
 ## Temple Ring (46 images)
-#### by running: ./project.exe -f 1520.4 -s SomePath/TempleRing
 ![](docs/pointCloud.gif)
 ![](docs/mesh.gif)
 ## Wooden Spool (41 images)
-#### by running: ./project.exe -f 2787.7 SomePath/WoodenSpool
 The images were cropped to reduce computation time
 ![](docs/roll.png)
 ![](docs/roll.gif)
 
 
 # Required tools and libraries
-- [CMake](https://cmake.org) for easier building: 
+- [CMake](https://cmake.org) for easier building
 - [OpenCV compile with contrib modules](https://github.com/opencv/opencv_contrib) (Apache 2 License)
 - [Ceres Solver](http://ceres-solver.org/installation.html) (BSD license)
 - [Point Cloud Library (PCL)](https://pointclouds.org/downloads) (BSD license)
 - [CGAL](https://www.cgal.org/download.html) (Open Source license)
 
 # Build
-- download the source code into some root folder "SomePath/Sr"
-- create a build folder within the Sr directory: SomePath/Sr/Build
+## Using Docker
+```
+docker-compose run sr
+```
+## Without Docker
+- Download the source code into some root folder "SomePath/Sr"
+- Create a build folder within the Sr directory: SomePath/Sr/Build
 - Set "YOUR OWN" Build DIR dependency in CMakeList.txt
-- run CMake configure within SomePath/Sr/Build as Build directory and SomePath/Sr as source directory
-- run generate
-- open visual studio solotion in SomePath/Sr/Build/Sr_Project.sln
+- Run CMake configure within SomePath/Sr/Build as Build directory and SomePath/Sr as source directory
+- Run generate
+- Open visual studio solotion in SomePath/Sr/Build/Sr_Project.sln and compile
 
 # Usage
 ### Execute

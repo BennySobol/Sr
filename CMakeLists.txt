@@ -10,6 +10,8 @@ set_property( DIRECTORY PROPERTY VS_STARTUP_PROJECT "project" )
 # Find PCL
 find_package( PCL REQUIRED )
 
+
+set(CMAKE_BUILD_TYPE Release)
 # Find OpenCV
 set( OpenCV_DIR "C:/opencv/build" )
 find_package( OpenCV REQUIRED )
