@@ -1,15 +1,17 @@
 ![](docs/logo.png)
 
 # Sr. | Structure Reconstruction
-Sr. is a Structure from motion software:<br>
+Sr. is a Structure from motion software:    
 The software provide 3D Reconstruction and Camera Tracking.
+
+###  For More Details: [Project Workflow Presentation](https://1drv.ms/p/s!AudVtA3cNIargYUkhE_9iAjjZmI8Yw)
 
 # Examples
 ## Temple Ring (46 images)
 ![](docs/pointCloud.gif)
 ![](docs/mesh.gif)
 ## Wooden Spool (41 images)
-The images were cropped to reduce computation time
+The images were cropped to reduce computation time  
 ![](docs/roll.png)
 ![](docs/roll.gif)
 
@@ -23,9 +25,14 @@ The images were cropped to reduce computation time
 
 # Build
 ## Using Docker
+#### See [Sr image](https://hub.docker.com/repository/docker/bennysobol/sr) on docker hub
+
+- Start X Server on your machine
+- Deploy with docker compose
 ```
 docker-compose run sr
 ```
+
 ## Without Docker
 - Download the source code into some root folder "SomePath/Sr"
 - Create a build folder within the Sr directory: SomePath/Sr/Build
@@ -54,10 +61,10 @@ Options:
 
 The pipline gets as input images of an object and intrinsic camera parameters, the pipeline creates colored point cloud and turns it into textured mesh.
 
-Sr. gets an input directory containing images of an object from multiple views<br>
-first option - using calib.xml:<br>
-second option using - focal length:<br>
-Note that intrinsic camera parameters must be named calib.xml!<br>
+Sr. gets an input directory containing images of an object from multiple views    
+first option - using calib.xml:    
+second option using - focal length:    
+Note that intrinsic camera parameters must be named calib.xml!    
 and be in the format:
 ```
 <?xml version="1.0"?>
@@ -74,13 +81,13 @@ and be in the format:
   <data>k1 k2 p1 p2 k3</data></distortionCoefficients>
 </opencv_storage>
 ```
-where:<br>
-`fx, fy` are the focal length on the axis<br>
-`(cx, cy)` is the principal point<br>
+where:    
+`fx, fy` are the focal length on the axis    
+`(cx, cy)` is the principal point    
 `k1, k2, p1, p2` and `k3` are the distortion coefficients
 ### Output Data
 Sr. will create new folder in the input drictory named **output**, in this folder the software will crate several files:
 - **PointCloud.ply** - Colored pointcloud of the object
-- **occluded.jpg** - This images is used tp texture occluded part in the mesh
+- **occluded.jpg** - This images is used to texture occluded part in the mesh
 - **TexturMesh.mtl** - File containing information about the textuers matrials
 - **TexturMesh.obj** - Textuerd mesh of the object
