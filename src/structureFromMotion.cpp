@@ -97,7 +97,7 @@ structureFromMotion::structureFromMotion(double cameraScale)
 
 	// save occluded.jpg - an image with the average color of all points in the point cloud, used later in the pipline for the tuxtureing of untuxturd part
 	cv::Mat avrageColorImage(features[0].image.size().height, features[0].image.size().width, CV_8UC3, _averageColor);
-	cv::imwrite(features[0].path.substr(0, features[0].path.find_last_of('\\') + 1) + "output\\occluded.jpg", avrageColorImage);
+	cv::imwrite(features[0].path.substr(0, features[0].path.find_last_of('/') + 1) + "output/occluded.jpg", avrageColorImage);
 
 	bundleAdjustment(_pointCloud, *_pclPointCloudPtr);
 	_visualizer->updateAll();

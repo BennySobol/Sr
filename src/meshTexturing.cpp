@@ -76,7 +76,7 @@ meshTexturing::meshTexturing(std::string plyFilePath, std::string saveObjFilePat
 
 		if (i < cameras.size())
 		{
-			meshMaterial.tex_file = "..\\" + getFileNameWithExtension(cameras[i].texture_file);
+			meshMaterial.tex_file = "../" + getFileNameWithExtension(cameras[i].texture_file);
 		}
 		else
 		{

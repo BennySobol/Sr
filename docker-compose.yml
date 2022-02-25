@@ -9,5 +9,6 @@ services:
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
       - C:/Users/BennySobol/OneDrive/Desktop/dataset:/home/user/dataset
+      - C:/Users/BennySobol/OneDrive/Desktop/Sr:/home/user/benny/Sr
     network_mode: host
     

@@ -285,7 +285,7 @@ int getScreenWidth()
 
 std::string getFileNameWithExtension(std::string path)
 {
-	return path.substr(path.find_last_of("\\") + 1, path.size() - 1);
+	return path.substr(path.find_last_of("/") + 1, path.size() - 1);
 }
 
 std::string getFileName(std::string path)
